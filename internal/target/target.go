@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"unicode"
 )
 
 // Normalize reduces a domain or URL to its bare host: the scheme, userinfo,
@@ -37,22 +38,45 @@ func Normalize(s string) string {
 		s = h
 	}
 	s = strings.TrimSuffix(strings.ToLower(s), ".")
+	s = toUnicode(s)
 	s = strings.TrimPrefix(s, "www.")
 	return s
 }
 
+// Valid reports whether a prepared target may be sent to Ahrefs at all:
+// it must hold a host (Normalize is not empty) and no whitespace or control
+// characters. Other problems are left to Ahrefs, which rejects them with
+// HTTP 400.
+func Valid(s string) bool {
+	if Normalize(s) == "" {
+		return false
+	}
+	for _, r := range s {
+		if unicode.IsSpace(r) || unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
+}
+
 // Prepare normalizes (unless raw) and de-duplicates targets, keeping the
-// order of first appearance. Empty results are dropped.
+// order of first appearance. Blank input is dropped. Input that normalizes
+// to nothing (such as "https://") is kept as given, trimmed, so the caller
+// can report it as invalid (see Valid).
 func Prepare(in []string, raw bool) []string {
 	seen := make(map[string]bool, len(in))
 	out := make([]string, 0, len(in))
 	for _, s := range in {
-		if raw {
-			s = strings.TrimSpace(s)
-		} else {
-			s = Normalize(s)
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
 		}
-		if s == "" || seen[s] {
+		if !raw {
+			if n := Normalize(s); n != "" {
+				s = n
+			}
+		}
+		if seen[s] {
 			continue
 		}
 		seen[s] = true

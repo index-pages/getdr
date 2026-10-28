@@ -243,8 +243,11 @@ func (s *Server) dr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, res := range results {
-		if res.Status == lookup.NoResponse {
+		switch res.Status {
+		case lookup.NoResponse:
 			s.logf("serve: no response for %s: %v", res.Target, res.Err)
+		case lookup.Invalid:
+			s.logf("serve: invalid target %q: %v", res.Target, res.Err)
 		}
 	}
 	if single {

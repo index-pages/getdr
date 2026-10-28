@@ -63,7 +63,11 @@ func (c *Client) Fetch(ctx context.Context, targets []string, version string, fr
 		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
 	if c.Log != nil {
-		c.Log("api: POST %s/dr, %d targets", c.URL, len(targets))
+		n := fmt.Sprintf("%d targets", len(targets))
+		if len(targets) == 1 {
+			n = "1 target"
+		}
+		c.Log("api: POST %s/dr, %s", c.URL, n)
 	}
 	hc := c.HTTP
 	if hc == nil {

@@ -225,10 +225,12 @@ func single(b *strings.Builder, r lookup.Result, o Options, p painter) {
 		if o.UTF8 {
 			big = bigText("-")
 		}
+	case lookup.Invalid:
+		lines = append(lines, line{"rating", p.paint(ansiRed, "invalid target")})
 	default:
 		lines = append(lines, line{"rating", p.paint(ansiRed, "no response")})
 	}
-	if r.History != nil && r.Status != lookup.NoResponse {
+	if r.History != nil && r.Status != lookup.NoResponse && r.Status != lookup.Invalid {
 		tr := trendOf(r, o)
 		var s string
 		switch {
@@ -380,6 +382,8 @@ func list(b *strings.Builder, shown, all []lookup.Result, o Options, p painter) 
 		switch {
 		case r.Status == lookup.NoResponse:
 			b.WriteString(p.paint(ansiRed, "no response"))
+		case r.Status == lookup.Invalid:
+			b.WriteString(p.paint(ansiRed, "invalid"))
 		case r.Status == lookup.NoData:
 			b.WriteString(p.paint(ansiDim, "no data"))
 		default:
@@ -407,7 +411,7 @@ func list(b *strings.Builder, shown, all []lookup.Result, o Options, p painter) 
 
 func summary(all []lookup.Result, o Options, p painter) string {
 	var vals []float64
-	noData, noResp, fetched, cached := 0, 0, 0, 0
+	noData, noResp, invalid, fetched, cached := 0, 0, 0, 0, 0
 	above := 0
 	for _, r := range all {
 		switch r.Status {
@@ -420,9 +424,11 @@ func summary(all []lookup.Result, o Options, p painter) string {
 			noData++
 		case lookup.NoResponse:
 			noResp++
+		case lookup.Invalid:
+			invalid++
 		}
 		switch {
-		case r.Status == lookup.NoResponse:
+		case r.Status == lookup.NoResponse || r.Status == lookup.Invalid:
 		case r.Cached:
 			cached++
 		default:
@@ -444,6 +450,9 @@ func summary(all []lookup.Result, o Options, p painter) string {
 	}
 	if noResp > 0 {
 		parts = append(parts, p.paint(ansiRed, fmt.Sprintf("%d no response", noResp)))
+	}
+	if invalid > 0 {
+		parts = append(parts, p.paint(ansiRed, fmt.Sprintf("%d invalid", invalid)))
 	}
 	parts = append(parts, fmt.Sprintf("%d fetched, %d cached", fetched, cached))
 	return strings.Join(parts, dot)

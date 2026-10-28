@@ -50,6 +50,11 @@ func (f *fakeAhrefs) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Unlock()
 	var items []string
 	for _, t := range body.Targets {
+		if t == "localhost" || strings.Contains(t, "..") {
+			w.WriteHeader(400)
+			fmt.Fprintf(w, `{ "error": "bad 'targets': invalid domain or url: '%s'" }`, t)
+			return
+		}
 		if strings.HasPrefix(t, "down") {
 			w.WriteHeader(500)
 			w.Write([]byte(`{"error":"internal"}`))
@@ -446,5 +451,49 @@ func TestReadOnlyCacheWarns(t *testing.T) {
 	}
 	if _, _, errs := h.run("dd.com", "-q"); strings.Contains(errs, "could not write") {
 		t.Fatalf("-q silences the warning: %q", errs)
+	}
+}
+
+func TestInvalidTargets(t *testing.T) {
+	h := newHarness(t)
+	code, out, errs := h.run("ahrefs.com", "exa mple.com", "localhost", "github.com", "-q")
+	if code != 2 || out != "ahrefs.com\t60\nexa mple.com\t\nlocalhost\t\ngithub.com\t60\n" {
+		t.Fatalf("code %d out %q err %q", code, out, errs)
+	}
+	if errs != "getdr: invalid target: exa mple.com\ngetdr: invalid target: localhost\n" {
+		t.Fatalf("stderr %q", errs)
+	}
+	before := h.fake.requests
+	code, out, _ = h.run("localhost", "a..com", "ahrefs.com", "--format", "json", "-q")
+	want := `{"target":"localhost","dr":null,"version":"dr3","checked_at":null,"cached":false}` + "\n" +
+		`{"target":"a..com","dr":null,"version":"dr3","checked_at":null,"cached":false}` + "\n" +
+		`{"target":"ahrefs.com","dr":60,"version":"dr3"`
+	if code != 2 || !strings.HasPrefix(out, want) {
+		t.Fatalf("json %d %q", code, out)
+	}
+	// Invalid targets are never cached: localhost and a..com are sent again
+	// (each rejection is one request), ahrefs.com comes from the cache.
+	if h.fake.requests != before+2 {
+		t.Fatalf("requests %d -> %d", before, h.fake.requests)
+	}
+	// Locally rejected targets are never sent.
+	before = h.fake.requests
+	code, _, errs = h.run("https://", "exa mple.com")
+	if code != 2 || h.fake.requests != before || strings.Count(errs, "invalid target") != 2 {
+		t.Fatalf("local reject: %d %d %q", code, h.fake.requests-before, errs)
+	}
+	h.tty, h.width = true, 100
+	h.env["NO_COLOR"] = "1"
+	_, out, _ = h.run("localhost", "ahrefs.com", "-q")
+	if !strings.Contains(out, "invalid") || !strings.Contains(out, "1 invalid") {
+		t.Fatalf("card:\n%s", out)
+	}
+}
+
+func TestIDNTargets(t *testing.T) {
+	h := newHarness(t)
+	code, out, _ := h.run("xn--e1afmkfd.xn--p1ai", "ПРИМЕР.РФ", "-q")
+	if code != 0 || out != "пример.рф\t120\n" {
+		t.Fatalf("%d %q", code, out)
 	}
 }

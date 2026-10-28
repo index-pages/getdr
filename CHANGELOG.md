@@ -11,8 +11,10 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - `getdr` CLI: check Ahrefs Domain Rating for domains or URLs from arguments,
-  a file (`-f`) or stdin; target normalization and de-duplication (`--raw` to
-  skip it).
+  a file (`-f`) or stdin; target normalization (including punycode to
+  Unicode) and de-duplication (`--raw` to skip it).
+- Invalid targets are isolated: rejected locally or taken out of a batch that
+  Ahrefs refuses, reported on stderr, never cached; the rest is still checked.
 - Output formats: `card` (terminal), `tsv`, `csv`, `json` (NDJSON) and `-b`
   (bare values); `--fields`, `--sort`, `--min`/`--max` with exit code 1,
   `--all`.

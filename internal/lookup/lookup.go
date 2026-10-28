@@ -12,11 +12,16 @@ import (
 	"time"
 
 	"github.com/index-pages/getdr/internal/cache"
+	"github.com/index-pages/getdr/internal/target"
 )
 
 // ErrKey marks a missing or rejected Ahrefs API key. Errors wrapping it make
 // the CLI exit with code 3 and getdr serve answer 503.
 var ErrKey = errors.New("Ahrefs API key")
+
+// ErrInvalid marks a target that is not a domain or URL: rejected locally
+// (see target.Valid) or by Ahrefs with HTTP 400.
+var ErrInvalid = errors.New("invalid target")
 
 // Outcome is what a Fetcher learned about one target.
 type Outcome struct {
@@ -29,7 +34,10 @@ type Outcome struct {
 	// NoResponse is set when the source gave no answer for the target
 	// (timeout, rate limit, server error). Such outcomes are not cached.
 	NoResponse bool
-	// Err explains NoResponse.
+	// Invalid is set when the source rejected the target as not a domain or
+	// URL. Such outcomes are not cached either.
+	Invalid bool
+	// Err explains NoResponse or Invalid.
 	Err error
 }
 
@@ -46,6 +54,7 @@ const (
 	OK         Status = iota // a DR value is known
 	NoData                   // the source answered, but has no DR for the target
 	NoResponse               // the source did not answer for the target
+	Invalid                  // the target is not a valid domain or URL
 )
 
 // Result is the answer for one target.
@@ -56,7 +65,7 @@ type Result struct {
 	CheckedAt time.Time // zero when never checked
 	Cached    bool
 	Status    Status
-	Err       error // set with NoResponse
+	Err       error // set with NoResponse and Invalid
 	// History holds the stored checks for (target, version), oldest first,
 	// including this result when it was measured. Nil without a cache.
 	History []cache.Check
@@ -65,7 +74,7 @@ type Result struct {
 // Delta is the difference between the last and the previous check, nil when
 // either is missing or has no data.
 func (r Result) Delta() *float64 {
-	if r.Status == NoResponse || len(r.History) < 2 {
+	if r.Status == NoResponse || r.Status == Invalid || len(r.History) < 2 {
 		return nil
 	}
 	last, prev := r.History[len(r.History)-1], r.History[len(r.History)-2]
@@ -158,7 +167,13 @@ func (e *Engine) Lookup(ctx context.Context, targets []string, version string, f
 	}
 	results := make([]Result, len(targets))
 	var need []string
+	invalid := 0
 	for i, t := range targets {
+		if !target.Valid(t) {
+			results[i] = Result{Target: t, Version: version, Status: Invalid, Err: ErrInvalid}
+			invalid++
+			continue
+		}
 		h := hist[t]
 		results[i] = Result{Target: t, Version: version, History: h}
 		if e.Cache != nil && results[i].History == nil {
@@ -181,9 +196,9 @@ func (e *Engine) Lookup(ctx context.Context, targets []string, version string, f
 		}
 		need = append(need, t)
 	}
-	e.hits.Add(int64(len(targets) - len(need)))
+	e.hits.Add(int64(len(targets) - invalid - len(need)))
 	e.misses.Add(int64(len(need)))
-	e.logf("cache: %d fresh, %d to fetch (%s)", len(targets)-len(need), len(need), version)
+	e.logf("cache: %d fresh, %d to fetch (%s)", len(targets)-invalid-len(need), len(need), version)
 	if len(need) == 0 {
 		return results, nil
 	}
@@ -191,11 +206,15 @@ func (e *Engine) Lookup(ctx context.Context, targets []string, version string, f
 	outs := e.fetch(ctx, need, version, fresh, now)
 	var keyErr error
 	for i := range results {
-		if results[i].Cached {
+		o, ok := outs[results[i].Target]
+		if !ok {
+			continue // from the cache or rejected locally
+		}
+		r := &results[i]
+		if o.Invalid {
+			r.Status, r.Err, r.History = Invalid, o.Err, nil
 			continue
 		}
-		o := outs[results[i].Target]
-		r := &results[i]
 		if o.NoResponse {
 			r.Status, r.Err = NoResponse, o.Err
 			if keyErr == nil && errors.Is(o.Err, ErrKey) {
@@ -256,11 +275,11 @@ func (e *Engine) fetch(ctx context.Context, targets []string, version string, fr
 			if !ok {
 				o = Outcome{NoResponse: true, Err: errors.New("missing from response")}
 			}
-			if !o.NoResponse && o.CheckedAt.IsZero() {
+			if !o.NoResponse && !o.Invalid && o.CheckedAt.IsZero() {
 				o.CheckedAt = now
 			}
 			out[t] = o
-			if !o.NoResponse {
+			if !o.NoResponse && !o.Invalid {
 				rows = append(rows, cache.Row{Domain: t, DR: o.DR, CheckedAt: o.CheckedAt})
 			}
 		}

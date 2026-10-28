@@ -335,3 +335,112 @@ func TestRefusesCrossHostRedirect(t *testing.T) {
 		t.Fatal("redirect target must not be contacted")
 	}
 }
+
+// realisticAhrefs mimics the live endpoint: the first invalid target fails
+// the whole batch with 400, items echo targets with a trailing slash, and
+// unknown domains get 0.
+type realisticAhrefs struct {
+	mu     sync.Mutex
+	bodies [][]string
+}
+
+func (m *realisticAhrefs) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Targets []string `json:"targets"`
+		Version string   `json:"version"`
+	}
+	json.NewDecoder(r.Body).Decode(&body)
+	m.mu.Lock()
+	m.bodies = append(m.bodies, body.Targets)
+	m.mu.Unlock()
+	if body.Version != "dr3" && body.Version != "dr4" {
+		w.WriteHeader(400)
+		fmt.Fprintf(w, `{ "error": "bad 'version': '%s' is not one of [dr3, dr4] (case-sensitive)" }`, body.Version)
+		return
+	}
+	var items []string
+	for _, t := range body.Targets {
+		if t == "" || t == "localhost" || strings.Contains(t, " ") || strings.Contains(t, "..") || t == "ghost" {
+			if t == "ghost" {
+				t = "somebody-else" // a 400 naming a target we did not send
+			}
+			w.WriteHeader(400)
+			fmt.Fprintf(w, `{ "error": "bad 'targets': invalid domain or url: '%s'" }`, t)
+			return
+		}
+		dr := 0.0
+		if t == "ahrefs.com" {
+			dr = 91
+		}
+		items = append(items, fmt.Sprintf(`{"target":%q,"domain_rating":%v}`, t+"/", dr))
+	}
+	fmt.Fprintf(w, `{"domain_rating":{"license":"x","targets":[%s]}}`, strings.Join(items, ","))
+}
+
+func TestInvalidTargetIsolation(t *testing.T) {
+	m := &realisticAhrefs{}
+	srv := httptest.NewServer(m)
+	defer srv.Close()
+	c := &Client{Endpoint: srv.URL, Key: "k", Batch: 1000, Retries: 0, Timeout: 5 * time.Second}
+	out := c.Fetch(context.Background(), []string{"ahrefs.com", "exa mple.com", "localhost", "a..com", "unknown-site.example"}, "dr3", false)
+	for _, bad := range []string{"exa mple.com", "localhost", "a..com"} {
+		o := out[bad]
+		if !o.Invalid || o.NoResponse || o.DR != nil || !errors.Is(o.Err, lookup.ErrInvalid) {
+			t.Errorf("%s: %+v", bad, o)
+		}
+	}
+	if o := out["ahrefs.com"]; o.Invalid || o.NoResponse || o.DR == nil || *o.DR != 91 {
+		t.Errorf("ahrefs.com %+v", o)
+	}
+	if o := out["unknown-site.example"]; o.Invalid || o.DR == nil || *o.DR != 0 {
+		t.Errorf("unknown domain gets 0 from Ahrefs: %+v", o)
+	}
+	if len(m.bodies) != 4 || len(m.bodies[3]) != 2 {
+		t.Fatalf("expected 3 rejected attempts and 1 good one, got %v", m.bodies)
+	}
+
+	// Every target invalid: the batch empties, no further request.
+	m.bodies = nil
+	out = c.Fetch(context.Background(), []string{"localhost"}, "dr3", false)
+	if !out["localhost"].Invalid || len(m.bodies) != 1 {
+		t.Fatalf("%+v %v", out["localhost"], m.bodies)
+	}
+
+	// A 400 naming something we did not send, or any other 400: whole batch, no response.
+	out = c.Fetch(context.Background(), []string{"ahrefs.com", "ghost"}, "dr3", false)
+	for _, k := range []string{"ahrefs.com", "ghost"} {
+		if o := out[k]; !o.NoResponse || o.Invalid {
+			t.Errorf("%s: %+v", k, o)
+		}
+	}
+	out = c.Fetch(context.Background(), []string{"ahrefs.com"}, "dr5", false)
+	if o := out["ahrefs.com"]; !o.NoResponse || !strings.Contains(o.Err.Error(), "bad 'version'") {
+		t.Errorf("bad version: %+v", o)
+	}
+}
+
+func TestInvalidIsolationPerBatch(t *testing.T) {
+	m := &realisticAhrefs{}
+	srv := httptest.NewServer(m)
+	defer srv.Close()
+	c := &Client{Endpoint: srv.URL, Key: "k", Batch: 2, Timeout: 5 * time.Second}
+	out := c.Fetch(context.Background(), []string{"a.com", "localhost", "b.com", "c.com"}, "dr3", false)
+	if !out["localhost"].Invalid || out["a.com"].DR == nil || out["b.com"].DR == nil || out["c.com"].DR == nil {
+		t.Fatalf("%+v", out)
+	}
+	if len(m.bodies) != 3 {
+		t.Fatalf("requests %v", m.bodies)
+	}
+}
+
+func TestParseIDNAndRawEcho(t *testing.T) {
+	// Ahrefs echoes IDN targets in Unicode and raw URLs normalized its own way.
+	data := []byte(`{"domain_rating":{"targets":[{"target":"пример.рф/","domain_rating":10},{"target":"www.theverge.com/tech","domain_rating":93}]}}`)
+	out, _ := parse(data, []string{"https://www.Theverge.com/tech", "xn--e1afmkfd.xn--p1ai"})
+	if o := out["https://www.Theverge.com/tech"]; o.DR == nil || *o.DR != 93 {
+		t.Errorf("raw URL %+v", o)
+	}
+	if o := out["xn--e1afmkfd.xn--p1ai"]; o.DR == nil || *o.DR != 10 {
+		t.Errorf("punycode %+v", o)
+	}
+}

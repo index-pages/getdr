@@ -350,6 +350,14 @@ func (r *runner) check() int {
 	var reasons []string
 	byReason := map[string][]string{}
 	for _, res := range results {
+		if res.Status == lookup.Invalid {
+			code = exitError
+			r.errf("invalid target: %s", res.Target)
+			if res.Err != nil && res.Err != lookup.ErrInvalid {
+				r.logf("%s: %v", res.Target, res.Err)
+			}
+			continue
+		}
 		if res.Status != lookup.NoResponse {
 			continue
 		}

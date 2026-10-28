@@ -28,13 +28,19 @@ The same object the CLI prints with `--format json`:
 | field | |
 |---|---|
 | `target` | the normalized target (or as given with `raw`) |
-| `dr` | Domain Rating 0–100, `null` when Ahrefs has no data or did not respond |
+| `dr` | Domain Rating 0–100; `null` when the target is invalid, Ahrefs did not respond, or (rarely) has no data |
 | `version` | `dr3` or `dr4` |
-| `checked_at` | when the value was measured, RFC 3339 UTC; `null` when Ahrefs did not respond |
+| `checked_at` | when the value was measured, RFC 3339 UTC; `null` for invalid targets and no response |
 | `cached` | `true` when served from the server cache |
 
-`dr: null` with a `checked_at` means "Ahrefs has no data"; `dr: null` with `checked_at: null` means
-"no response this time, try again later" (it is not cached).
+Ahrefs answers `0` for domains it does not know, so `0` is a normal value. `dr: null` with `checked_at: null`
+means the target was invalid or there was no response this time – neither is cached. `dr: null` with a
+`checked_at` means Ahrefs explicitly had no data (cached for `ttl_none`).
+
+Invalid targets never fail a request: input without a host or with whitespace or control characters is
+rejected locally, and a target Ahrefs refuses with HTTP 400 (`{"error":"bad 'targets': invalid domain or url:
+'localhost'"}`) is taken out of its batch while the rest is resent. Both come back as `dr: null`,
+`checked_at: null` inside a normal `200`.
 
 ## GET /dr
 
@@ -60,7 +66,7 @@ cache; `raw=1` disables normalization.
 ]}
 ```
 
-Targets are normalized and de-duplicated; results follow their order. The server splits the work into
+Targets are normalized (punycode labels decoded to Unicode) and de-duplicated; results follow their order. The server splits the work into
 Ahrefs batches of up to 1000 and respects its rate limit. Only `targets`, `version`, `fresh` and `raw` are
 accepted – clients cannot change the server's TTL.
 

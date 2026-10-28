@@ -1,14 +1,21 @@
 // Package ahrefs talks to the free Ahrefs Domain Rating endpoint:
 // POST https://api.ahrefs.com/v3/public/domain-rating-free
 //
-// Response shape (per the official docs):
+// Response shape (docs, confirmed against the live API in October 2026):
 //
-//	{"domain_rating":{"license":"…","targets":[{"target":"x.com","domain_rating":49.0}]}}
+//	{"domain_rating":{"license":"…","targets":[{"target":"x.com/","domain_rating":49.0}]}}
 //
-// Each target object may also carry an "error" string. A target with an
-// error, a null or missing domain_rating, or one absent from the response is
-// treated as "no data": Ahrefs answered, there is just no rating. A rating of
-// 0 is a real value (a domain without meaningful backlinks). Errors come back
+// Items keep the request order and echo each target the way Ahrefs
+// normalizes it, with a trailing slash ("ahrefs.com/", "www.theverge.com/tech")
+// and IDNs in Unicode ("пример.рф/" for "xn--e1afmkfd.xn--p1ai"); getdr matches
+// them by normalized name first and by position only as a fallback. Unknown
+// domains get 0.0, not null; an item with an "error", a null or missing
+// domain_rating, or a target absent from the response is still treated as
+// "no data".
+//
+// One target Ahrefs does not accept fails the whole batch with HTTP 400 and
+// {"error":"bad 'targets': invalid domain or url: '<target>'"}; the client
+// then marks that target invalid and resends the rest. Other errors come back
 // as {"error":"…"} or ["Error","…"]; 401 means a rejected key, 403 a missing one.
 package ahrefs
 
@@ -20,6 +27,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -142,7 +150,9 @@ func (c *Client) Fetch(ctx context.Context, targets []string, version string, _ 
 	out := make(map[string]lookup.Outcome, len(targets))
 	fail := func(ts []string, err error) {
 		for _, t := range ts {
-			out[t] = lookup.Outcome{NoResponse: true, Err: err}
+			if _, done := out[t]; !done {
+				out[t] = lookup.Outcome{NoResponse: true, Err: err}
+			}
 		}
 	}
 	if c.Key == "" {
@@ -159,8 +169,8 @@ func (c *Client) Fetch(ctx context.Context, targets []string, version string, _ 
 		if c.Progress != nil {
 			c.Progress(i+1, total)
 		}
-		c.logf("ahrefs: batch %d/%d, %d targets", i+1, total, len(batch))
-		got, err := c.post(ctx, batch, version)
+		c.logf("ahrefs: batch %d/%d, %s", i+1, total, plural(len(batch), "target"))
+		got, err := c.postIsolating(ctx, batch, version, out)
 		if err != nil {
 			if errors.Is(err, lookup.ErrKey) || ctx.Err() != nil {
 				fail(targets[i*size:], err)
@@ -174,6 +184,47 @@ func (c *Client) Fetch(ctx context.Context, targets []string, version string, _ 
 		}
 	}
 	return out
+}
+
+// postIsolating sends a batch. Ahrefs rejects a whole batch with HTTP 400
+// when one target is not a domain or URL and names that target in the error;
+// postIsolating then marks it invalid in out and resends the rest at once (a
+// new request under the rate limit, not a retry) until the batch passes or
+// nothing is left.
+func (c *Client) postIsolating(ctx context.Context, batch []string, version string, out map[string]lookup.Outcome) (map[string]lookup.Outcome, error) {
+	for len(batch) > 0 {
+		got, err := c.post(ctx, batch, version)
+		var bad *invalidTargetError
+		if !errors.As(err, &bad) {
+			return got, err
+		}
+		c.logf("ahrefs: Ahrefs rejected %q as invalid, resending the other %s", bad.target, plural(len(batch)-1, "target"))
+		out[bad.target] = lookup.Outcome{Invalid: true, Err: fmt.Errorf("%w (Ahrefs: %s)", lookup.ErrInvalid, bad.msg)}
+		rest := make([]string, 0, len(batch)-1)
+		for _, t := range batch {
+			if t != bad.target {
+				rest = append(rest, t)
+			}
+		}
+		batch = rest
+	}
+	return nil, nil
+}
+
+// invalidTargetError is a 400 that names one target of the batch.
+type invalidTargetError struct{ target, msg string }
+
+func (e *invalidTargetError) Error() string { return e.msg }
+
+// invalidRe matches the 400 error Ahrefs sends for a bad target, e.g.
+// "bad 'targets': invalid domain or url: 'exa mple.com'".
+var invalidRe = regexp.MustCompile(`invalid domain or url: '(.*)'\s*$`)
+
+func plural(n int, unit string) string {
+	if n == 1 {
+		return "1 " + unit
+	}
+	return strconv.Itoa(n) + " " + unit + "s"
 }
 
 // post sends one batch, retrying transient failures.
@@ -203,6 +254,16 @@ func (c *Client) post(ctx context.Context, batch []string, version string) (map[
 			return nil, fmt.Errorf("%w refused by Ahrefs (HTTP 403: %s)", lookup.ErrKey, errorText(data))
 		case status == http.StatusTooManyRequests || status >= 500:
 			lastErr = fmt.Errorf("HTTP %d: %s", status, errorText(data))
+		case status == http.StatusBadRequest:
+			msg := errorText(data)
+			if m := invalidRe.FindStringSubmatch(msg); m != nil {
+				for _, t := range batch {
+					if t == m[1] {
+						return nil, &invalidTargetError{target: t, msg: msg}
+					}
+				}
+			}
+			return nil, fmt.Errorf("HTTP %d: %s", status, msg)
 		default:
 			return nil, fmt.Errorf("HTTP %d: %s", status, errorText(data))
 		}
@@ -291,6 +352,9 @@ func parse(data []byte, batch []string) (map[string]lookup.Outcome, error) {
 		j, ok := byTarget[t]
 		if !ok {
 			j, ok = byTarget[strings.ToLower(t)]
+		}
+		if !ok {
+			j, ok = byTarget[target.Normalize(t)]
 		}
 		if ok && !used[j] {
 			match[i], used[j] = j, true

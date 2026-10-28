@@ -59,7 +59,13 @@ getdr saas.com --fresh                  # ignore the cache
 ```
 
 Targets are normalized by default: a URL becomes its host, `www.` is dropped, everything is
-lower-cased and duplicates are removed. `--raw` sends targets as given.
+lower-cased, punycode labels (`xn--…`) are decoded to Unicode – so `xn--e1afmkfd.xn--p1ai` and `ПРИМЕР.РФ`
+are both `пример.рф` – and duplicates are removed. `--raw` sends targets as given.
+
+Invalid targets don't spoil the rest of the list. Input with no host, whitespace or control characters is
+rejected before anything is sent; a target Ahrefs refuses (such as `localhost` or `a..com`) is dropped from
+its batch and the batch is resent. Each one gets `getdr: invalid target: X` on stderr, an empty result and
+exit code 2, and is never cached.
 
 ## Output
 
@@ -75,8 +81,9 @@ On a terminal the default is `card`; when stdout is a pipe or a file it is `tsv`
 | `-b` | DR values only, one per line, empty line for no data |
 
 `--fields` picks tsv/csv columns from `domain,dr,version,checked_at,delta,cached` (default `domain,dr`);
-for json the record is always complete and `delta` is added when listed. `dr` is `null` when Ahrefs has no
-data for the domain; `checked_at` is `null` when there was no response.
+for json the record is always complete and `delta` is added when listed. Ahrefs answers `0` for domains it
+does not know, so `dr` is `null` almost only when the target was invalid or got no response (then
+`checked_at` is `null` too); a `null` with a `checked_at` would mean Ahrefs explicitly had no data.
 
 The card respects `NO_COLOR`, and falls back to plain ASCII without big digits and bars on `TERM=dumb`
 or a non-UTF-8 locale. Lists over 200 rows show the top 200; `--all` shows everything.
@@ -109,8 +116,8 @@ or a non-UTF-8 locale. Lists over 200 rows show the top 200; `--all` shows every
 
 Commands: `getdr serve`, `getdr cache stats | clear | purge`, `getdr config show`, `getdr key check`.
 
-Exit codes: `0` ok, `1` a target failed `--min`/`--max`, `2` error or targets without a response
-(timeout, rate limit), `3` Ahrefs API key missing or rejected.
+Exit codes: `0` ok, `1` a target failed `--min`/`--max`, `2` error, invalid targets or targets without a
+response (timeout, rate limit), `3` Ahrefs API key missing or rejected.
 
 ## Configuration
 

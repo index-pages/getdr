@@ -12,6 +12,11 @@
 //	index-pages.com                  – DR 42
 //	ahrefs.com                       – DR 91
 //
+// Like the live API, a target that contains whitespace, is empty, is
+// "localhost" or contains ".." fails its whole batch with HTTP 400
+// {"error":"bad 'targets': invalid domain or url: '<target>'"}, and items echo
+// targets with a trailing slash ("a.com/"), xn-- labels decoded to Unicode.
+//
 // With -ahrefs ADDR the fake Ahrefs endpoint is also exposed at
 // http://ADDR/v3/public/domain-rating-free (Bearer key required; the key
 // "bad" is rejected with 401) for testing direct-to-Ahrefs clients.
@@ -37,10 +42,11 @@ import (
 	"github.com/index-pages/getdr/internal/cache"
 	"github.com/index-pages/getdr/internal/lookup"
 	"github.com/index-pages/getdr/internal/server"
+	"github.com/index-pages/getdr/internal/target"
 )
 
-func fakeDR(target, version string) *float64 {
-	t := strings.ToLower(target)
+func fakeDR(raw, version string) *float64 {
+	t := target.Normalize(raw)
 	switch {
 	case t == "nodata.example" || strings.HasSuffix(t, ".nodata.example"):
 		return nil
@@ -94,7 +100,16 @@ func fakeAhrefs(w http.ResponseWriter, r *http.Request) {
 	}
 	items := make([]item, len(body.Targets))
 	for i, t := range body.Targets {
-		items[i] = item{t, fakeDR(t, body.Version)}
+		if strings.TrimSpace(t) == "" || strings.ContainsAny(t, " \t\r\n") || t == "localhost" || strings.Contains(t, "..") {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "bad 'targets': invalid domain or url: '" + t + "'"})
+			return
+		}
+		echo := t
+		if strings.Contains(strings.ToLower(t), "xn--") {
+			echo = target.Normalize(t)
+		}
+		items[i] = item{strings.TrimSuffix(echo, "/") + "/", fakeDR(t, body.Version)}
 	}
 	json.NewEncoder(w).Encode(map[string]any{"domain_rating": map[string]any{
 		"license": "https://ahrefs.com/legal/domain-rating-license", "targets": items,

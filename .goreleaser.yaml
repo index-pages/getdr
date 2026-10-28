@@ -1,0 +1,48 @@
+# GoReleaser config for getdr. Prepared for the release workflow in
+# .github/workflows/release.yml; run locally with: goreleaser release --snapshot --clean
+version: 2
+
+project_name: getdr
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: getdr
+    main: .
+    binary: getdr
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/index-pages/getdr/internal/buildinfo.Version={{ .Version }}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: getdr
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+      - CHANGELOG.md
+      - humans.txt
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true
+
+release:
+  name_template: "getdr {{ .Version }}"
+  footer: |
+    Changes: see CHANGELOG.md. Docs: https://index-pages.com/getdr

@@ -425,3 +425,26 @@ func TestKeyCheck(t *testing.T) {
 		t.Fatalf("no key: %d", code)
 	}
 }
+
+func TestReadOnlyCacheWarns(t *testing.T) {
+	h := newHarness(t)
+	if code, _, _ := h.run("aa.com", "-q"); code != 0 {
+		t.Fatal(code)
+	}
+	path := h.env["GETDR_CACHE_PATH"]
+	for _, p := range []string{path, path + "-wal", path + "-shm"} {
+		os.Chmod(p, 0o444)
+	}
+	t.Cleanup(func() {
+		for _, p := range []string{path, path + "-wal", path + "-shm"} {
+			os.Chmod(p, 0o644)
+		}
+	})
+	code, out, errs := h.run("bb.com", "cc.com")
+	if code != 0 || out != "bb.com\t20\ncc.com\t20\n" || strings.Count(errs, "could not write the cache") != 1 {
+		t.Fatalf("read-only cache: %d %q %q", code, out, errs)
+	}
+	if _, _, errs := h.run("dd.com", "-q"); strings.Contains(errs, "could not write") {
+		t.Fatalf("-q silences the warning: %q", errs)
+	}
+}

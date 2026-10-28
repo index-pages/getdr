@@ -68,10 +68,10 @@ accepted – clients cannot change the server's TTL.
 
 | status | when |
 |---|---|
-| 400 | missing `target`, invalid `version`, invalid JSON or unknown field, no valid targets |
+| 400 | missing `target`, invalid `version`, invalid JSON, unknown field or data after the JSON object, no valid targets |
 | 401 | token required and missing or wrong |
 | 404 | unknown path |
-| 405 | wrong method |
+| 405 | wrong method (also `HEAD /dr`, which never triggers a lookup) |
 | 413 | more than `max_targets` targets (default 10000) |
 | 503 | the server has no Ahrefs key, or Ahrefs rejected it |
 
@@ -83,7 +83,7 @@ accepted – clients cannot change the server's TTL.
 
 ```json
 {
-  "cache": {"path":"/var/lib/getdr/cache.db","size_bytes":45328,"rows":1200,"domains":950,
+  "cache": {"size_bytes":45328,"rows":1200,"domains":950,
             "versions":{"dr3":900,"dr4":50},"oldest":"2026-10-01T09:00:00Z","newest":"2026-10-28T12:03:11Z"},
   "lookups": {"hits":1830,"misses":120,"hit_rate":0.9385},
   "ahrefs_requests_last_hour": 3
@@ -111,4 +111,5 @@ getdr --api http://lan-host:8080 --token s3cret -f domains.txt
 ```
 
 or set `api` and `serve.token` in the config file, or `GETDR_API` and `GETDR_SERVE_TOKEN`. The CLI sends one
-`POST /dr` for the targets its own cache does not cover and forwards `--fresh`.
+`POST /dr` for the targets its own cache does not cover and forwards `--fresh`. Proxy variables
+(`HTTP_PROXY`, `HTTPS_PROXY`) apply to this request too; add a LAN server to `NO_PROXY`.

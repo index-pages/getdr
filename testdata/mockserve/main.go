@@ -3,7 +3,7 @@
 // Ahrefs key or network access. It lives under testdata, so it is never part
 // of the getdr binary or of "go build ./...".
 //
-//	go run ./testdata/mockserve -listen 127.0.0.1:8089 [-token T] [-no-key] [-ahrefs 127.0.0.1:8090]
+//	go run -trimpath ./testdata/mockserve -listen 127.0.0.1:8089 [-token T] [-no-key] [-ahrefs 127.0.0.1:8090]
 //
 // Fake data is deterministic: every domain gets a DR derived from its name,
 // except these special targets:

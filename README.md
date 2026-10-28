@@ -19,7 +19,7 @@ so every machine and agent on your network shares one cache and one key. Docs:
 ## Install
 
 ```sh
-go install github.com/index-pages/getdr@latest
+go install -trimpath github.com/index-pages/getdr@latest
 ```
 
 Or download a binary for Linux, macOS or Windows (amd64, arm64) from the
@@ -192,7 +192,9 @@ getdr is not affiliated with Ahrefs.
 getdr connects to exactly two places: `api.ahrefs.com`, and the getdr server you set in `api`. No telemetry,
 no update checks, no analytics, no pings. Every request carries the User-Agent
 `getdr/<version> (+https://index-pages.com/getdr)`. You can verify this in the source: all outgoing requests
-are made in `internal/ahrefs` and `internal/remote`.
+are made in `internal/ahrefs` and `internal/remote`, and redirects to any other host are refused.
+The binary honours the standard `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` environment variables; if you use
+a proxy and a getdr server on your LAN, add the server to `NO_PROXY`.
 
 ## License
 

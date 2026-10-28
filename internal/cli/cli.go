@@ -291,7 +291,14 @@ func (r *runner) check() int {
 	}
 
 	// Engine.
-	eng := &lookup.Engine{TTL: cfg.TTL, TTLNone: cfg.TTLNone, Now: env.Now, Log: r.logf}
+	warned := false
+	eng := &lookup.Engine{TTL: cfg.TTL, TTLNone: cfg.TTLNone, Now: env.Now, Log: r.logf,
+		Warn: func(format string, args ...any) {
+			if !warned && !r.quiet {
+				warned = true
+				r.errf(format, args...)
+			}
+		}}
 	if !a.has("no-cache") {
 		db, err := cache.Open(cfg.CachePath)
 		if err != nil {

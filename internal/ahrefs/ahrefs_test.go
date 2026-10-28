@@ -279,3 +279,59 @@ func TestErrorText(t *testing.T) {
 		}
 	}
 }
+
+func TestParseUsesItemOnce(t *testing.T) {
+	data := []byte(`{"domain_rating":{"targets":[{"target":"https://b.com/","domain_rating":5},{"target":"a.com","domain_rating":77}]}}`)
+	out, err := parse(data, []string{"a.com", "b.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o := out["a.com"]; o.DR == nil || *o.DR != 77 {
+		t.Errorf("a.com %+v", o)
+	}
+	if o := out["b.com"]; o.DR == nil || *o.DR != 5 {
+		t.Errorf("b.com must match https://b.com/ by normalized name, got %+v", o.DR)
+	}
+	// Unknown name at a position already claimed by name: no data, never a reused value.
+	data = []byte(`{"domain_rating":{"targets":[{"target":"zzz","domain_rating":5},{"target":"a.com","domain_rating":77}]}}`)
+	out, _ = parse(data, []string{"a.com", "b.com"})
+	if o := out["a.com"]; o.DR == nil || *o.DR != 77 {
+		t.Errorf("a.com %+v", o)
+	}
+	if o := out["b.com"]; o.DR != nil {
+		t.Errorf("b.com must be no data, got %v", *o.DR)
+	}
+	// Positional fallback never reuses an item matched by name.
+	data = []byte(`{"domain_rating":{"targets":[{"target":"a.com","domain_rating":77},{"target":"zzz","domain_rating":3}]}}`)
+	out, _ = parse(data, []string{"b.com", "a.com"})
+	if o := out["a.com"]; o.DR == nil || *o.DR != 77 {
+		t.Errorf("a.com %+v", o)
+	}
+	if o := out["b.com"]; o.DR != nil {
+		t.Errorf("b.com position 0 holds a.com's item, must be no data: %v", *o.DR)
+	}
+	// Different lengths: no positional fallback.
+	data = []byte(`{"domain_rating":{"targets":[{"target":"x","domain_rating":1}]}}`)
+	out, _ = parse(data, []string{"a.com", "b.com"})
+	if out["a.com"].DR != nil || out["b.com"].DR != nil {
+		t.Error("no fallback when lengths differ")
+	}
+}
+
+func TestRefusesCrossHostRedirect(t *testing.T) {
+	var hit atomic.Int32
+	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { hit.Add(1) }))
+	defer other.Close()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, other.URL+"/steal", http.StatusTemporaryRedirect)
+	}))
+	defer srv.Close()
+	c := &Client{Endpoint: srv.URL, Key: "good", Timeout: 5 * time.Second}
+	out := c.Fetch(context.Background(), []string{"a.com"}, "dr3", false)
+	if o := out["a.com"]; !o.NoResponse || !strings.Contains(o.Err.Error(), "refusing redirect") {
+		t.Fatalf("%+v", o)
+	}
+	if hit.Load() != 0 {
+		t.Fatal("redirect target must not be contacted")
+	}
+}

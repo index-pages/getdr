@@ -27,6 +27,7 @@ import (
 
 	"github.com/index-pages/getdr/internal/buildinfo"
 	"github.com/index-pages/getdr/internal/lookup"
+	"github.com/index-pages/getdr/internal/target"
 )
 
 // Endpoint is the only Ahrefs URL getdr calls.
@@ -243,7 +244,7 @@ func (c *Client) do(ctx context.Context, body []byte) (status int, data []byte, 
 	req.Header.Set("User-Agent", buildinfo.UserAgent())
 	hc := c.HTTP
 	if hc == nil {
-		hc = http.DefaultClient
+		hc = defaultHTTP
 	}
 	c.record()
 	resp, err := hc.Do(req)
@@ -274,20 +275,40 @@ func parse(data []byte, batch []string) (map[string]lookup.Outcome, error) {
 	items := r.DomainRating.Targets
 	byTarget := make(map[string]int, len(items))
 	for i, it := range items {
-		byTarget[it.Target] = i
-		byTarget[strings.ToLower(it.Target)] = i
+		for _, k := range []string{it.Target, strings.ToLower(it.Target), target.Normalize(it.Target)} {
+			if _, dup := byTarget[k]; !dup && k != "" {
+				byTarget[k] = i
+			}
+		}
 	}
-	out := make(map[string]lookup.Outcome, len(batch))
+	// Each response item is used at most once: first match by name, then,
+	// when the response has as many items as the request, fall back to the
+	// request order for targets whose name did not match and whose own
+	// position holds an item no other target claimed.
+	match := make([]int, len(batch))
+	used := make([]bool, len(items))
 	for i, t := range batch {
 		j, ok := byTarget[t]
 		if !ok {
 			j, ok = byTarget[strings.ToLower(t)]
 		}
-		if !ok && len(items) == len(batch) {
-			j, ok = i, true // same length: fall back to request order
+		if ok && !used[j] {
+			match[i], used[j] = j, true
+		} else {
+			match[i] = -1
 		}
+	}
+	if len(items) == len(batch) {
+		for i := range batch {
+			if match[i] < 0 && !used[i] {
+				match[i], used[i] = i, true
+			}
+		}
+	}
+	out := make(map[string]lookup.Outcome, len(batch))
+	for i, t := range batch {
 		o := lookup.Outcome{}
-		if ok && items[j].Error == "" && items[j].DomainRating != nil {
+		if j := match[i]; j >= 0 && items[j].Error == "" && items[j].DomainRating != nil {
 			v := *items[j].DomainRating
 			o.DR = &v
 		}
@@ -318,4 +339,18 @@ func errorText(data []byte) string {
 		s = "empty response"
 	}
 	return s
+}
+
+// defaultHTTP refuses redirects to another host, so a response can never
+// send getdr anywhere but the host it was configured to talk to.
+var defaultHTTP = &http.Client{CheckRedirect: sameHost}
+
+func sameHost(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("too many redirects")
+	}
+	if req.URL.Host != via[0].URL.Host || req.URL.Scheme != via[0].URL.Scheme {
+		return fmt.Errorf("refusing redirect from %s://%s to %s://%s", via[0].URL.Scheme, via[0].URL.Host, req.URL.Scheme, req.URL.Host)
+	}
+	return nil
 }

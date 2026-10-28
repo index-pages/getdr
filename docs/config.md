@@ -92,3 +92,5 @@ Secrets (`key`, `serve.token`) show only their last 4 characters.
   and bars.
 - `COLUMNS` – card width when it cannot be read from the terminal.
 - `HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME` – default file locations.
+- `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` – the standard proxy variables are honoured; when you use a proxy and
+  a getdr server on your LAN as `api`, add that server to `NO_PROXY`.

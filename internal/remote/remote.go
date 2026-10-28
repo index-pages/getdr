@@ -67,7 +67,7 @@ func (c *Client) Fetch(ctx context.Context, targets []string, version string, fr
 	}
 	hc := c.HTTP
 	if hc == nil {
-		hc = http.DefaultClient
+		hc = defaultHTTP
 	}
 	resp, err := hc.Do(req)
 	if err != nil {
@@ -123,4 +123,18 @@ func errorText(data []byte) string {
 		s = s[:200] + "…"
 	}
 	return s
+}
+
+// defaultHTTP refuses redirects to another host, so a response can never
+// send getdr anywhere but the host it was configured to talk to.
+var defaultHTTP = &http.Client{CheckRedirect: sameHost}
+
+func sameHost(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("too many redirects")
+	}
+	if req.URL.Host != via[0].URL.Host || req.URL.Scheme != via[0].URL.Scheme {
+		return fmt.Errorf("refusing redirect from %s://%s to %s://%s", via[0].URL.Scheme, via[0].URL.Host, req.URL.Scheme, req.URL.Host)
+	}
+	return nil
 }

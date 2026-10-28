@@ -111,6 +111,9 @@ type Engine struct {
 	Now     func() time.Time
 	// Log receives verbose diagnostics; may be nil.
 	Log func(format string, args ...any)
+	// Warn receives problems the user should see even without -v, such as
+	// failed cache writes; may be nil.
+	Warn func(format string, args ...any)
 
 	mu       sync.Mutex
 	inflight map[string]*call
@@ -263,7 +266,11 @@ func (e *Engine) fetch(ctx context.Context, targets []string, version string, fr
 		}
 		if e.Cache != nil {
 			if err := e.Cache.Insert(version, rows); err != nil {
-				e.logf("%v", err)
+				if e.Warn != nil {
+					e.Warn("could not write the cache, results are not saved: %v", err)
+				} else {
+					e.logf("%v", err)
+				}
 			}
 		}
 		e.mu.Lock()

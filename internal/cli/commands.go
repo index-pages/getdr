@@ -27,7 +27,8 @@ func (r *runner) serve() int {
 	}
 	defer db.Close()
 	client := r.ahrefsClient()
-	eng := &lookup.Engine{Cache: db, Fetcher: client, TTL: cfg.TTL, TTLNone: cfg.TTLNone, Now: r.env.Now, Log: r.logf}
+	eng := &lookup.Engine{Cache: db, Fetcher: client, TTL: cfg.TTL, TTLNone: cfg.TTLNone, Now: r.env.Now, Log: r.logf,
+		Warn: func(format string, args ...any) { r.errf("serve: "+format, args...) }}
 	s := &server.Server{
 		Engine:         eng,
 		DefaultVersion: cfg.Version,

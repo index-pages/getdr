@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -60,7 +61,7 @@ func (s *Server) Handler() http.Handler {
 			return
 		}
 		method := r.Method
-		if method == http.MethodHead {
+		if method == http.MethodHead && r.URL.Path != "/dr" {
 			method = http.MethodGet
 		}
 		if !strings.Contains(rt.methods, method) {
@@ -138,7 +139,10 @@ func (s *Server) stats(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		out["cache"] = st
+		out["cache"] = map[string]any{
+			"size_bytes": st.SizeBytes, "rows": st.Rows, "domains": st.Domains,
+			"versions": st.Versions, "oldest": st.Oldest, "newest": st.Newest,
+		}
 	}
 	if s.Requests != nil {
 		out["ahrefs_requests_last_hour"] = s.Requests()
@@ -199,6 +203,10 @@ func (s *Server) dr(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error()+`; expected {"targets":["example.com"],"version":"dr3","fresh":false,"raw":false}`)
+			return
+		}
+		if dec.More() || dec.Decode(&struct{}{}) != io.EOF {
+			writeError(w, http.StatusBadRequest, "invalid JSON body: unexpected data after the JSON object")
 			return
 		}
 		targets, version, fresh, raw = body.Targets, body.Version, body.Fresh, body.Raw

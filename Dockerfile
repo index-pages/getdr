@@ -1,7 +1,7 @@
 # getdr serve in a scratch image.
 #   docker build -t getdr .
 #   docker run -p 8080:8080 -e GETDR_KEY=... -v getdr-data:/data getdr
-FROM golang:1.24-bookworm AS build
+FROM golang:1.24.4-bookworm AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download

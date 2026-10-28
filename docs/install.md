@@ -7,7 +7,7 @@ Draft for https://index-pages.com/getdr#install
 With Go 1.24 or newer:
 
 ```sh
-go install github.com/index-pages/getdr@latest
+go install -trimpath github.com/index-pages/getdr@latest
 ```
 
 The binary lands in `$(go env GOPATH)/bin`; make sure it is on your `PATH`.

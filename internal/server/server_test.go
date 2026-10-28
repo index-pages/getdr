@@ -145,6 +145,8 @@ func TestEndpoints(t *testing.T) {
 		{"POST", "/dr", `{"targets":[]}`, 400, "no valid targets"},
 		{"POST", "/dr", `{"targets":["a.com"],"ttl":"1s"}`, 400, "unknown field"},
 		{"POST", "/dr", `not json`, 400, "invalid JSON"},
+		{"POST", "/dr", `{"targets":["a.com"]} junk`, 400, "after the JSON object"},
+		{"POST", "/dr", `{"targets":["a.com"]}{"targets":["b.com"]}`, 400, "after the JSON object"},
 		{"POST", "/dr", `{"targets":["a.com","b.com","c.com","d.com","e.com","f.com"]}`, 413, "at most 5"},
 	} {
 		code, _, body := do(t, c.method, ts.URL+c.path, "", c.body)
@@ -166,7 +168,10 @@ func TestEndpoints(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &st); err != nil || code != 200 {
 		t.Fatalf("stats %d %s", code, body)
 	}
-	if st.Cache == nil || st.Cache.Rows == 0 || st.Lookups.Hits != 1 || st.Lookups.Misses != 5 || st.Requests != 7 {
+	if strings.Contains(body, `"path"`) {
+		t.Fatalf("stats must not expose the cache path: %s", body)
+	}
+	if st.Cache == nil || st.Cache.Rows == 0 || st.Cache.SizeBytes == 0 || st.Lookups.Hits != 1 || st.Lookups.Misses != 5 || st.Requests != 7 {
 		t.Fatalf("stats %s", body)
 	}
 }
@@ -247,5 +252,17 @@ func TestDedup(t *testing.T) {
 	}
 	if n := f.targets.Load(); n != 1 {
 		t.Fatalf("same.com fetched %d times, want 1", n)
+	}
+}
+
+func TestHeadDoesNoLookup(t *testing.T) {
+	f := &slowFetcher{}
+	ts, _ := newServer(t, f, "")
+	code, h, _ := do(t, "HEAD", ts.URL+"/dr?target=a.com", "", "")
+	if code != http.StatusMethodNotAllowed || h.Get("Allow") != "GET, POST" || f.calls.Load() != 0 {
+		t.Fatalf("HEAD /dr: %d allow %q fetches %d", code, h.Get("Allow"), f.calls.Load())
+	}
+	if code, _, _ := do(t, "HEAD", ts.URL+"/healthz", "", ""); code != 200 {
+		t.Fatalf("HEAD /healthz: %d", code)
 	}
 }

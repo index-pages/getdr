@@ -18,6 +18,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"hash/fnv"
@@ -26,11 +27,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
-
-	"encoding/json"
 
 	"github.com/index-pages/getdr/internal/ahrefs"
 	"github.com/index-pages/getdr/internal/cache"
@@ -153,5 +154,14 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Fprintf(os.Stderr, "mockserve: getdr API on http://%s (cache %s)\n", ln.Addr(), *cachePath)
-	log.Fatal(http.Serve(ln, s.Handler()))
+	errc := make(chan error, 1)
+	go func() { errc <- http.Serve(ln, s.Handler()) }()
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	select {
+	case err := <-errc:
+		log.Print(err)
+	case <-sig:
+	}
+	// Returning runs the deferred cleanup (temporary cache, fake Ahrefs).
 }

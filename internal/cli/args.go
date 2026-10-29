@@ -171,7 +171,7 @@ Flags:
       --config PATH      config file
       --listen ADDR      serve: listen address (default 127.0.0.1:8080)
       --token T          serve: required bearer token; with --api: token to send
-  -q, --quiet            no progress, attribution or warnings on stderr
+  -q, --quiet            no progress or warnings on stderr
   -v, --verbose          show cache hits, API calls and batches on stderr
   -V                     print the getdr version
   -h, --help             show this help
@@ -179,6 +179,5 @@ Flags:
 Exit codes: 0 ok, 1 a target failed --min/--max, 2 error or targets without
 a response, 3 Ahrefs API key missing or rejected.
 
-Domain Rating by Ahrefs – https://ahrefs.com/
 Docs: https://index-pages.com/getdr
 `

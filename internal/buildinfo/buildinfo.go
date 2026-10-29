@@ -12,8 +12,6 @@ const (
 	KeyHelp = Homepage + "#key"
 	// Docs is the HTTP API documentation of getdr serve.
 	Docs = Homepage + "#api"
-	// Attribution is required by the Ahrefs Domain Rating license.
-	Attribution = "Domain Rating by Ahrefs – https://ahrefs.com/"
 )
 
 // UserAgent is sent with every outgoing HTTP request.

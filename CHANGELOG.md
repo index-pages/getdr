@@ -6,6 +6,12 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+
+- The Ahrefs attribution line is no longer printed: not on stderr after
+  machine formats or `key check`, not in the card footer, not in `-h`.
+  Output carries only the data.
+
 ## [0.1.0] - 2026-10-28
 
 ### Added

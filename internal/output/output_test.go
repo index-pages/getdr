@@ -100,7 +100,7 @@ func TestCardSingle(t *testing.T) {
 	for _, want := range []string{
 		"domain     saas.com", "rating     49 ▐█████████▌░░░░░░░░░░  /100",
 		"trend      ▁▅█  +4 since Sep 17", "checked    2026-10-28 · 12 min ago, cached",
-		"version    dr3", "Domain Rating by Ahrefs · getdr by Index Pages", "█",
+		"version    dr3", "█",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in\n%s", want, got)
@@ -149,9 +149,6 @@ func TestCardASCII(t *testing.T) {
 			if r > 0x7e && r != '\n' {
 				t.Fatalf("non-ASCII %q in\n%s", r, got)
 			}
-		}
-		if !strings.Contains(got, "Domain Rating by Ahrefs - getdr by Index Pages") {
-			t.Errorf("footer missing:\n%s", got)
 		}
 	}
 }

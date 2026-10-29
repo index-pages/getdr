@@ -198,8 +198,5 @@ func (r *runner) keyCheck() int {
 		dr = "DR " + fmt.Sprint(*out.DR)
 	}
 	fmt.Fprintf(r.env.Stdout, "key ok (%s): Ahrefs answered, ahrefs.com %s (%s)\n", r.cfg.Sources["key"], dr, r.cfg.Version)
-	if !r.quiet {
-		fmt.Fprintln(r.env.Stderr, buildinfo.Attribution)
-	}
 	return exitOK
 }

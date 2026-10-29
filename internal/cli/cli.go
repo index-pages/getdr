@@ -423,8 +423,5 @@ func (r *runner) check() int {
 		r.errf("%v", err)
 		return exitError
 	}
-	if format != "card" && !r.quiet {
-		fmt.Fprintln(env.Stderr, buildinfo.Attribution)
-	}
 	return code
 }

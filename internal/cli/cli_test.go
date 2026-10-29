@@ -125,8 +125,8 @@ func TestTSVDefaultAndCache(t *testing.T) {
 	if code != 0 || out != "abc.com\t30\nabcd.io\t40\nnodata.net\t\n" {
 		t.Fatalf("code %d out %q err %q", code, out, errs)
 	}
-	if strings.Count(errs, buildinfo.Attribution) != 1 {
-		t.Fatalf("attribution once on stderr: %q", errs)
+	if errs != "" {
+		t.Fatalf("stderr must stay empty: %q", errs)
 	}
 	// Second run: everything from the cache, flags after positionals.
 	code, out, _ = h.run("abc.com", "nodata.net", "--format", "json", "--fields", "domain,dr,delta")
@@ -260,11 +260,11 @@ func TestCardAndQuiet(t *testing.T) {
 	h := newHarness(t)
 	h.tty, h.width = true, 100
 	code, out, errs := h.run("index-pages.com")
-	if code != 0 || !strings.Contains(out, "that's us") || !strings.Contains(out, "Domain Rating by Ahrefs · getdr by Index Pages") || !strings.Contains(out, "\x1b[") {
+	if code != 0 || !strings.Contains(out, "that's us") || strings.Contains(out, "Ahrefs") || !strings.Contains(out, "\x1b[") {
 		t.Fatalf("card: %d %q", code, out)
 	}
 	if strings.Contains(errs, "Ahrefs") {
-		t.Fatalf("card must not print attribution on stderr: %q", errs)
+		t.Fatalf("card must not print anything on stderr: %q", errs)
 	}
 	h.env["NO_COLOR"] = "1"
 	_, out, _ = h.run("aa.com", "bbb.com", "nodata.com")

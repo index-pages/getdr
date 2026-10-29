@@ -178,6 +178,10 @@ func egg(target string, p painter) string {
 	return ""
 }
 
+func footer(p painter) string {
+	return "  " + p.paint(ansiDim, "Domain Rating by Ahrefs "+p.sym("·", "-")+" getdr by Index Pages") + "\n"
+}
+
 func writeCard(w io.Writer, shown, all []lookup.Result, o Options) error {
 	p := painter{color: o.Color, utf8: o.UTF8}
 	if o.Loc == nil {
@@ -192,6 +196,7 @@ func writeCard(w io.Writer, shown, all []lookup.Result, o Options) error {
 	default:
 		list(&b, shown, all, o, p)
 	}
+	b.WriteString(footer(p))
 	_, err := io.WriteString(w, b.String())
 	return err
 }
@@ -401,7 +406,7 @@ func list(b *strings.Builder, shown, all []lookup.Result, o Options, p painter) 
 	if more > 0 {
 		b.WriteString("  " + p.paint(ansiDim, fmt.Sprintf("%s %d more, use --all", ell, more)) + "\n")
 	}
-	b.WriteString("\n  " + summary(all, o, p) + "\n\n")
+	b.WriteString("\n  " + summary(all, o, p) + "\n")
 }
 
 func summary(all []lookup.Result, o Options, p painter) string {

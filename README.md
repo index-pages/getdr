@@ -12,6 +12,8 @@ so every machine and agent on your network shares one cache and one key. Docs:
   ▀▀▀█  ▀▀█     trend      ▁▅█  +4 since Sep 17
      █    █     checked    2026-10-28 · 12 min ago, cached
      █  ▄▄▀     version    dr3
+
+  Domain Rating by Ahrefs · getdr by Index Pages
 ```
 
 ## Install
@@ -187,8 +189,8 @@ docker run -d -p 8080:8080 -e GETDR_KEY=your-key -e GETDR_SERVE_TOKEN=s3cret -v 
 
 Domain Rating data comes from [Ahrefs](https://ahrefs.com/) and is subject to the
 [Domain Rating License](https://ahrefs.com/legal/domain-rating-license), which requires the attribution
-"Domain Rating by Ahrefs" wherever you publish the numbers. getdr itself prints only the data, with no
-attribution in its output.
+"Domain Rating by Ahrefs" wherever you publish the numbers. getdr shows it only in the card footer;
+machine formats (`tsv`, `csv`, `json`, `-b`) carry only the data.
 
 getdr is not affiliated with Ahrefs.
 

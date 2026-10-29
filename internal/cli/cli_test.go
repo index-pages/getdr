@@ -260,7 +260,7 @@ func TestCardAndQuiet(t *testing.T) {
 	h := newHarness(t)
 	h.tty, h.width = true, 100
 	code, out, errs := h.run("index-pages.com")
-	if code != 0 || !strings.Contains(out, "that's us") || strings.Contains(out, "Ahrefs") || !strings.Contains(out, "\x1b[") {
+	if code != 0 || !strings.Contains(out, "that's us") || !strings.Contains(out, "Domain Rating by Ahrefs · getdr by Index Pages") || !strings.Contains(out, "\x1b[") {
 		t.Fatalf("card: %d %q", code, out)
 	}
 	if strings.Contains(errs, "Ahrefs") {

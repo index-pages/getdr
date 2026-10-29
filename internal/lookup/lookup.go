@@ -93,17 +93,20 @@ type Record struct {
 	Version   string   `json:"version"`
 	CheckedAt *string  `json:"checked_at"`
 	Cached    bool     `json:"cached"`
+	// Error is "invalid target" for a target that is not a domain or URL,
+	// and absent otherwise.
+	Error string `json:"error,omitempty"`
 }
 
-// RecordDelta is Record plus delta, used when delta is requested.
-type RecordDelta struct {
-	Record
-	Delta *float64 `json:"delta"`
-}
+// InvalidError is the Record.Error of an invalid target.
+const InvalidError = "invalid target"
 
 // Record converts the result to the JSON contract.
 func (r Result) Record() Record {
 	rec := Record{Target: r.Target, DR: r.DR, Version: r.Version, Cached: r.Cached}
+	if r.Status == Invalid {
+		rec.Error = InvalidError
+	}
 	if !r.CheckedAt.IsZero() {
 		s := r.CheckedAt.UTC().Format(time.RFC3339)
 		rec.CheckedAt = &s

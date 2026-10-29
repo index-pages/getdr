@@ -100,7 +100,9 @@ func (c *Client) Fetch(ctx context.Context, targets []string, version string, fr
 	}
 	for _, rec := range r.Results {
 		o := lookup.Outcome{DR: rec.DR, Cached: rec.Cached}
-		if rec.CheckedAt == nil {
+		if rec.Error == lookup.InvalidError {
+			o.Invalid, o.Err = true, lookup.ErrInvalid
+		} else if rec.CheckedAt == nil {
 			o.NoResponse, o.Err = true, fmt.Errorf("getdr server %s: no response from Ahrefs", c.URL)
 		} else if t, err := time.Parse(time.RFC3339, *rec.CheckedAt); err == nil {
 			o.CheckedAt = t.UTC()

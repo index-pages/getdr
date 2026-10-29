@@ -69,7 +69,9 @@ func TestMachineFormats(t *testing.T) {
 	if got != want {
 		t.Errorf("csv:\n%s\nwant\n%s", got, want)
 	}
-	got = render(t, rs, rs, opts("json"))
+	o = opts("json")
+	o.Fields = nil
+	got = render(t, rs, rs, o)
 	lines := strings.Split(strings.TrimSpace(got), "\n")
 	if len(lines) != 4 ||
 		lines[0] != `{"target":"saas.com","dr":49,"version":"dr3","checked_at":"2026-10-28T11:48:00Z","cached":true}` ||
@@ -78,10 +80,19 @@ func TestMachineFormats(t *testing.T) {
 		t.Errorf("json:\n%s", got)
 	}
 	o = opts("json")
-	o.Fields = []string{"delta"}
+	o.Fields = []string{"domain", "delta", "dr"}
 	got = render(t, rs[:2], rs, o)
-	if !strings.Contains(got, `"cached":true,"delta":2}`) || !strings.Contains(got, `"delta":null}`) {
-		t.Errorf("json delta:\n%s", got)
+	if got != `{"target":"saas.com","delta":2,"dr":49}`+"\n"+`{"target":"typo.example","delta":null,"dr":null}`+"\n" {
+		t.Errorf("json --fields:\n%s", got)
+	}
+	inv := lookup.Result{Target: "a b", Version: "dr3", Status: lookup.Invalid}
+	o.Fields = []string{"dr"}
+	if got = render(t, []lookup.Result{inv}, []lookup.Result{inv}, o); got != `{"dr":null,"error":"invalid target"}`+"\n" {
+		t.Errorf("json --fields keeps error: %s", got)
+	}
+	o.Fields = nil
+	if got = render(t, []lookup.Result{inv}, []lookup.Result{inv}, o); got != `{"target":"a b","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"}`+"\n" {
+		t.Errorf("json invalid: %s", got)
 	}
 	if got = render(t, rs, rs, opts("bare")); got != "49\n\n61.3\n\n" {
 		t.Errorf("bare %q", got)

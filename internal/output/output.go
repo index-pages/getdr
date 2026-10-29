@@ -2,6 +2,7 @@
 package output
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -44,7 +45,7 @@ func ParseFields(s string) ([]string, error) {
 // Options control rendering.
 type Options struct {
 	Format string   // card, tsv, csv, json or bare
-	Fields []string // tsv/csv columns; for json only "delta" matters
+	Fields []string // columns, or json keys; nil means the format's default
 	Color  bool
 	UTF8   bool
 	Width  int  // terminal columns
@@ -144,23 +145,53 @@ func writeCSV(w io.Writer, rs []lookup.Result, fields []string) error {
 	return cw.Error()
 }
 
+// writeJSON prints one Record per line, or with fields only those keys in
+// that order ("domain" is the "target" key). "error" is kept whenever set.
 func writeJSON(w io.Writer, rs []lookup.Result, fields []string) error {
-	withDelta := false
-	for _, f := range fields {
-		withDelta = withDelta || f == "delta"
-	}
-	enc := json.NewEncoder(w)
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
 	enc.SetEscapeHTML(false)
 	for _, r := range rs {
-		var v any = r.Record()
-		if withDelta {
-			v = lookup.RecordDelta{Record: r.Record(), Delta: r.Delta()}
+		rec := r.Record()
+		if fields == nil {
+			if err := enc.Encode(rec); err != nil {
+				return err
+			}
+			continue
 		}
-		if err := enc.Encode(v); err != nil {
-			return err
+		b.WriteByte('{')
+		for i, f := range fields {
+			if i > 0 {
+				b.WriteByte(',')
+			}
+			var v any
+			switch f {
+			case "domain":
+				f, v = "target", rec.Target
+			case "dr":
+				v = rec.DR
+			case "version":
+				v = rec.Version
+			case "checked_at":
+				v = rec.CheckedAt
+			case "delta":
+				v = r.Delta()
+			case "cached":
+				v = rec.Cached
+			}
+			b.WriteString(`"` + f + `":`)
+			if err := enc.Encode(v); err != nil {
+				return err
+			}
+			b.Truncate(b.Len() - 1)
 		}
+		if rec.Error != "" {
+			b.WriteString(`,"error":"` + rec.Error + `"`)
+		}
+		b.WriteString("}\n")
 	}
-	return nil
+	_, err := w.Write(b.Bytes())
+	return err
 }
 
 func writeBare(w io.Writer, rs []lookup.Result) error {

@@ -150,12 +150,12 @@ Usage:
   getdr key check
 
 Flags:
-  -f, --file FILE        read targets from FILE ("-" for stdin)
+  -f, --file FILE        read targets from FILE ("-" for stdin, like a bare -)
   -o, --out FILE         write the result to FILE instead of stdout
       --format F         card, tsv, csv or json (NDJSON); default: card on a
                          terminal, tsv otherwise
   -b, --bare             only the DR values, one per line, empty for no data
-      --fields LIST      tsv/csv columns: domain,dr,version,checked_at,delta,cached
+      --fields LIST      domain,dr,version,checked_at,delta,cached (json: keys)
                          (default domain,dr); json always has the full record
                          and adds delta when listed
       --sort             sort by DR, highest first (card always sorts)

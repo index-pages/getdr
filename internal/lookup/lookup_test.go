@@ -217,8 +217,13 @@ func TestRecordJSON(t *testing.T) {
 	if string(b) != want {
 		t.Fatalf("got %s", b)
 	}
-	b, _ = json.Marshal(lookup.RecordDelta{Record: lookup.Result{Target: "y.com", Version: "dr4", Status: lookup.NoResponse}.Record()})
-	want = `{"target":"y.com","dr":null,"version":"dr4","checked_at":null,"cached":false,"delta":null}`
+	b, _ = json.Marshal(lookup.Result{Target: "y.com", Version: "dr4", Status: lookup.NoResponse}.Record())
+	want = `{"target":"y.com","dr":null,"version":"dr4","checked_at":null,"cached":false}`
+	if string(b) != want {
+		t.Fatalf("got %s", b)
+	}
+	b, _ = json.Marshal(lookup.Result{Target: "a b", Version: "dr3", Status: lookup.Invalid}.Record())
+	want = `{"target":"a b","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"}`
 	if string(b) != want {
 		t.Fatalf("got %s", b)
 	}

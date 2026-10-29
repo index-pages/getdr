@@ -1,7 +1,5 @@
 # HTTP API (getdr serve)
 
-Draft for https://index-pages.com/getdr#api
-
 `getdr serve` is a small HTTP API in front of Ahrefs with a shared cache. Run it once with an Ahrefs key,
 then point CLIs, scripts and agents at it: they need no key, and repeated checks come from the cache.
 
@@ -32,15 +30,16 @@ The same object the CLI prints with `--format json`:
 | `version` | `dr3` or `dr4` |
 | `checked_at` | when the value was measured, RFC 3339 UTC; `null` for invalid targets and no response |
 | `cached` | `true` when served from the server cache |
+| `error` | `"invalid target"` for an invalid target; absent on every other record |
 
 Ahrefs answers `0` for domains it does not know, so `0` is a normal value. `dr: null` with `checked_at: null`
-means the target was invalid or there was no response this time – neither is cached. `dr: null` with a
+means the target was invalid (then `error` says so) or there was no response this time – neither is cached. `dr: null` with a
 `checked_at` means Ahrefs explicitly had no data (cached for `ttl_none`).
 
 Invalid targets never fail a request: input without a host or with whitespace or control characters is
 rejected locally, and a target Ahrefs refuses with HTTP 400 (`{"error":"bad 'targets': invalid domain or url:
 'localhost'"}`) is taken out of its batch while the rest is resent. Both come back as `dr: null`,
-`checked_at: null` inside a normal `200`.
+`checked_at: null`, `"error":"invalid target"` inside a normal `200`.
 
 ## GET /dr
 
@@ -102,7 +101,7 @@ domains.
 ## GET /
 
 ```json
-{"name":"getdr","version":"0.1.0","homepage":"https://index-pages.com/getdr","docs":"https://index-pages.com/getdr#api"}
+{"name":"getdr","version":"0.2.0","homepage":"https://index-pages.com/getdr","docs":"https://index-pages.com/getdr#api"}
 ```
 
 ## Concurrency

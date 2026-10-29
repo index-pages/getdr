@@ -271,8 +271,8 @@ func TestInvalidTargetsServe(t *testing.T) {
 	f := &slowFetcher{}
 	ts, _ := newServer(t, f, "")
 	code, _, body := do(t, "POST", ts.URL+"/dr", "", `{"targets":["exa mple.com","https://","a.com"]}`)
-	want := `{"results":[{"target":"exa mple.com","dr":null,"version":"dr3","checked_at":null,"cached":false},` +
-		`{"target":"https://","dr":null,"version":"dr3","checked_at":null,"cached":false},{"target":"a.com","dr":5,`
+	want := `{"results":[{"target":"exa mple.com","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"},` +
+		`{"target":"https://","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"},{"target":"a.com","dr":5,`
 	if code != 200 || !strings.HasPrefix(body, want) {
 		t.Fatalf("%d %s", code, body)
 	}

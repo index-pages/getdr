@@ -1,7 +1,5 @@
 # Configuration
 
-Draft for https://index-pages.com/getdr#config
-
 ## Priority
 
 1. command-line flag

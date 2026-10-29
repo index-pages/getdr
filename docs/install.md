@@ -1,7 +1,5 @@
 # Install getdr
 
-Draft for https://index-pages.com/getdr#install
-
 ## Go
 
 With Go 1.24 or newer:
@@ -18,7 +16,7 @@ Every release on [GitHub Releases](https://github.com/index-pages/getdr/releases
 Linux, macOS and Windows on amd64 and arm64, plus `checksums.txt`.
 
 ```sh
-tar -xzf getdr_0.1.0_linux_amd64.tar.gz
+tar -xzf getdr_0.2.0_linux_amd64.tar.gz
 sha256sum -c --ignore-missing checksums.txt
 sudo install getdr /usr/local/bin/
 getdr -V

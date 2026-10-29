@@ -6,11 +6,27 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- The JSON record of an invalid target has `"error":"invalid target"`
+  (`--format json` and `getdr serve`). With `--api`, a target the server's
+  Ahrefs refuses is reported as an invalid target instead of "no response".
+- A bare `-` argument reads targets from stdin in its place.
+- The test mock server takes `-version` for its default DR version.
+
+### Changed
+
+- `--fields` applies to json: only the listed keys, in the order given
+  (`domain` is the `target` key). Before, json always printed the full record
+  and `--fields` could only add `delta`. Without `--fields` json still prints
+  the full record.
+
 ### Removed
 
 - The Ahrefs attribution line is no longer printed on stderr after machine
   formats or `key check`, nor in `-h`. Machine output carries only the data;
   the card footer keeps it.
+- The "Draft for …" lines at the top of `docs/*.md`.
 
 ## [0.1.0] - 2026-10-28
 

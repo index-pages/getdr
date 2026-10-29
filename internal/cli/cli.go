@@ -178,7 +178,12 @@ func (r *runner) readTargets() ([]string, error) {
 	var in []string
 	for _, p := range r.a.pos {
 		if p == "-" {
-			return nil, errors.New(`use -f - to read targets from stdin`)
+			list, err := target.ReadList(r.env.Stdin)
+			if err != nil {
+				return nil, err
+			}
+			in = append(in, list...)
+			continue
 		}
 		in = append(in, p)
 	}
@@ -272,7 +277,10 @@ func (r *runner) check() int {
 	if a.has("bare") {
 		format = "bare"
 	}
-	fields := []string{"domain", "dr"}
+	var fields []string
+	if format != "json" {
+		fields = []string{"domain", "dr"}
+	}
 	if a.has("fields") {
 		if fields, err = output.ParseFields(a.str("fields")); err != nil {
 			r.errf("--fields: %v", err)

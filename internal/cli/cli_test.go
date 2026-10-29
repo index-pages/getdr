@@ -138,14 +138,19 @@ func TestTSVDefaultAndCache(t *testing.T) {
 	if err := json.Unmarshal([]byte(lines[0]), &rec); err != nil {
 		t.Fatal(err)
 	}
-	if rec["target"] != "abc.com" || rec["dr"] != 30.0 || rec["cached"] != true || rec["version"] != "dr3" || rec["checked_at"] == nil {
-		t.Fatalf("json %s", lines[0])
+	if lines[0] != `{"target":"abc.com","dr":30,"delta":null}` {
+		t.Fatalf("json --fields: %s", lines[0])
 	}
-	if _, ok := rec["delta"]; !ok {
-		t.Fatalf("delta requested: %s", lines[0])
+	_, out, _ = h.run("abc.com", "--format", "json")
+	rec = nil
+	if err := json.Unmarshal([]byte(out), &rec); err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(lines[1], `"dr":null`) || !strings.Contains(lines[1], `"cached":true`) {
-		t.Fatalf("no data must be cached: %s", lines[1])
+	if rec["target"] != "abc.com" || rec["dr"] != 30.0 || rec["cached"] != true || rec["version"] != "dr3" || rec["checked_at"] == nil || len(rec) != 5 {
+		t.Fatalf("json %s", out)
+	}
+	if lines[1] != `{"target":"nodata.net","dr":null,"delta":null}` {
+		t.Fatalf("no data: %s", lines[1])
 	}
 	// --fresh refetches; dr4 never reuses dr3.
 	h.run("abc.com", "--fresh")
@@ -177,6 +182,11 @@ func TestStdinFileBare(t *testing.T) {
 	code, out, _ = h.run("-f", "-", "--format", "csv")
 	if code != 0 || out != "domain,dr\nee.com,20\n" {
 		t.Fatalf("-f -: %d %q", code, out)
+	}
+	h.stdin = "ee.com\nb.com\n"
+	code, out, _ = h.run("ccc.com", "-", "-b")
+	if code != 0 || out != "30\n20\n10\n" {
+		t.Fatalf("- as stdin: %d %q", code, out)
 	}
 	outFile := filepath.Join(h.dir, "out.tsv")
 	h.stdin = ""
@@ -323,6 +333,10 @@ func TestAPIMode(t *testing.T) {
 				out[t] = lookup.Outcome{}
 				continue
 			}
+			if strings.HasPrefix(t, "refused") {
+				out[t] = lookup.Outcome{Invalid: true, Err: lookup.ErrInvalid}
+				continue
+			}
 			out[t] = lookup.Outcome{DR: &v}
 		}
 		return out
@@ -346,8 +360,15 @@ func TestAPIMode(t *testing.T) {
 	if h.fake.requests != 0 {
 		t.Fatal("api mode must not call Ahrefs")
 	}
+	// A target the server's Ahrefs refuses is reported as invalid, not as
+	// no response.
+	code, out, errs = h.run("refused.com", "--format", "json")
+	if code != 2 || out != `{"target":"refused.com","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"}`+"\n" ||
+		errs != "getdr: invalid target: refused.com\n" {
+		t.Fatalf("api invalid: %d %q %q", code, out, errs)
+	}
 	h.run("a.com", "--fresh", "-q")
-	if len(fresh) != 2 || fresh[0] || !fresh[1] {
+	if len(fresh) != 3 || fresh[0] || fresh[1] || !fresh[2] {
 		t.Fatalf("fresh forwarded: %v", fresh)
 	}
 	s.HasKey = false
@@ -465,8 +486,8 @@ func TestInvalidTargets(t *testing.T) {
 	}
 	before := h.fake.requests
 	code, out, _ = h.run("localhost", "a..com", "ahrefs.com", "--format", "json", "-q")
-	want := `{"target":"localhost","dr":null,"version":"dr3","checked_at":null,"cached":false}` + "\n" +
-		`{"target":"a..com","dr":null,"version":"dr3","checked_at":null,"cached":false}` + "\n" +
+	want := `{"target":"localhost","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"}` + "\n" +
+		`{"target":"a..com","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"}` + "\n" +
 		`{"target":"ahrefs.com","dr":60,"version":"dr3"`
 	if code != 2 || !strings.HasPrefix(out, want) {
 		t.Fatalf("json %d %q", code, out)

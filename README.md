@@ -64,8 +64,8 @@ are both `пример.рф` – and duplicates are removed. `--raw` sends targe
 
 Invalid targets don't spoil the rest of the list. Input with no host, whitespace or control characters is
 rejected before anything is sent; a target Ahrefs refuses (such as `localhost` or `a..com`) is dropped from
-its batch and the batch is resent. Each one gets `getdr: invalid target: X` on stderr, an empty result and
-exit code 2, and is never cached.
+its batch and the batch is resent. Each one gets `getdr: invalid target: X` on stderr, an empty result
+(`"error":"invalid target"` in json) and exit code 2, and is never cached.
 
 ## Output
 
@@ -80,10 +80,12 @@ On a terminal the default is `card`; when stdout is a pipe or a file it is `tsv`
 | `json` | NDJSON: `{"target":"x.com","dr":49,"version":"dr3","checked_at":"2026-10-28T12:00:00Z","cached":true}` |
 | `-b` | DR values only, one per line, empty line for no data |
 
-`--fields` picks tsv/csv columns from `domain,dr,version,checked_at,delta,cached` (default `domain,dr`);
-for json the record is always complete and `delta` is added when listed. Ahrefs answers `0` for domains it
-does not know, so `dr` is `null` almost only when the target was invalid or got no response (then
-`checked_at` is `null` too); a `null` with a `checked_at` would mean Ahrefs explicitly had no data.
+`--fields` picks the columns, in the order given, from `domain,dr,version,checked_at,delta,cached`. The
+default is `domain,dr` for tsv and csv and the full record for json; in json `domain` is the `target` key.
+Ahrefs answers `0` for domains it does not know, so `dr` is `null` almost only when the target was invalid
+or got no response (then `checked_at` is `null` too); a `null` with a `checked_at` would mean Ahrefs
+explicitly had no data. An invalid target's json record also has `"error":"invalid target"`, kept with any
+`--fields`; no other record has an `error` key.
 
 The card respects `NO_COLOR`, and falls back to plain ASCII without big digits and bars on `TERM=dumb`
 or a non-UTF-8 locale. Lists over 200 rows show the top 200; `--all` shows everything.
@@ -91,7 +93,7 @@ or a non-UTF-8 locale. Lists over 200 rows show the top 200; `--all` shows every
 ## Flags
 
 ```
--f, --file FILE        read targets from FILE ("-" for stdin)
+-f, --file FILE        read targets from FILE ("-" for stdin, like a bare -)
 -o, --out FILE         write the result to FILE instead of stdout
     --format F         card, tsv, csv or json
 -b, --bare             only the DR values

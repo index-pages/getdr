@@ -1,7 +1,5 @@
 # Ahrefs API key
 
-Draft for https://index-pages.com/getdr#key
-
 getdr reads Domain Rating from the official free Ahrefs endpoint. Requests to it cost nothing and use no
 API units, but every request needs an API key. The key is free.
 

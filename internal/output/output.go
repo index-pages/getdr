@@ -34,6 +34,11 @@ func ParseFields(s string) ([]string, error) {
 		if !ok {
 			return nil, fmt.Errorf("unknown field %q (available: %s)", f, strings.Join(Fields, ","))
 		}
+		for _, k := range out {
+			if k == f {
+				return nil, fmt.Errorf("field %q listed twice", f)
+			}
+		}
 		out = append(out, f)
 	}
 	if len(out) == 0 {

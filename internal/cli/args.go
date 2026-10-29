@@ -155,9 +155,8 @@ Flags:
       --format F         card, tsv, csv or json (NDJSON); default: card on a
                          terminal, tsv otherwise
   -b, --bare             only the DR values, one per line, empty for no data
-      --fields LIST      domain,dr,version,checked_at,delta,cached (json: keys)
-                         (default domain,dr); json always has the full record
-                         and adds delta when listed
+      --fields LIST      domain,dr,version,checked_at,delta,cached, in that
+                         order (default domain,dr; json: the full record)
       --sort             sort by DR, highest first (card always sorts)
       --all              card: show all rows, not only the top 200
       --min N, --max N   keep only DR >= N / <= N; exit 1 if any target fails

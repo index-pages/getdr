@@ -245,6 +245,9 @@ func TestHelpers(t *testing.T) {
 	if short(61.33) != "61.3" || short(49) != "49" || short(49.04) != "49" {
 		t.Error("short")
 	}
+	if _, err := ParseFields("dr,domain,dr"); err == nil {
+		t.Error("ParseFields must reject repeated fields")
+	}
 	if _, err := ParseFields("domain,dr,nope"); err == nil {
 		t.Error("ParseFields must reject unknown fields")
 	}

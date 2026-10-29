@@ -19,7 +19,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `--fields` applies to json: only the listed keys, in the order given
   (`domain` is the `target` key). Before, json always printed the full record
   and `--fields` could only add `delta`. Without `--fields` json still prints
-  the full record.
+  the full record. A field listed twice is an error.
 
 ### Removed
 

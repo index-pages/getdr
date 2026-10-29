@@ -116,5 +116,7 @@ getdr --api http://lan-host:8080 --token s3cret -f domains.txt
 ```
 
 or set `api` and `serve.token` in the config file, or `GETDR_API` and `GETDR_SERVE_TOKEN`. The CLI sends one
-`POST /dr` for the targets its own cache does not cover and forwards `--fresh`. Proxy variables
+`POST /dr` for the targets its own cache does not cover and forwards `--fresh`. It always sends its own DR
+version (`--version`, or `version` in its config, `dr3` by default), so the server's `version` setting
+applies only to clients that send none. Proxy variables
 (`HTTP_PROXY`, `HTTPS_PROXY`) apply to this request too; add a LAN server to `NO_PROXY`.

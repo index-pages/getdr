@@ -6,6 +6,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-29
+
 ### Added
 
 - The JSON record of an invalid target has `"error":"invalid target"`
@@ -53,5 +55,6 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `key check` to verify an Ahrefs API key.
 - Dockerfile (`FROM scratch`) for `getdr serve`.
 
-[Unreleased]: https://github.com/index-pages/getdr/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/index-pages/getdr/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/index-pages/getdr/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/index-pages/getdr/releases/tag/v0.1.0

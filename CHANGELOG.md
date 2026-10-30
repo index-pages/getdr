@@ -6,6 +6,27 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-30
+
+### Added
+
+- Homebrew: `brew install index-pages/tap/getdr` (macOS and Linux), from the
+  [index-pages/homebrew-tap](https://github.com/index-pages/homebrew-tap) tap.
+- npm: `npm install -g getdr`. The binary comes from a platform package
+  (`getdr-linux-x64`, `getdr-darwin-arm64`, …) picked by `os` and `cpu`;
+  no install scripts.
+- PyPI: `pipx install getdr`, `uv tool install getdr` or `pip install getdr`.
+  The wheels hold only the binary.
+- Docker: `ghcr.io/index-pages/getdr` for linux/amd64 and linux/arm64.
+- The release workflow publishes all of these; `tools/dist` builds the
+  formula, npm packages and wheels from the release archives.
+
+### Changed
+
+- Links to the site use the canonical `https://index-pages.com/getdr/`
+  (with the trailing slash) in messages, `-h`, the User-Agent and the
+  `getdr serve` index.
+
 ## [0.2.0] - 2026-10-29
 
 ### Added
@@ -55,6 +76,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `key check` to verify an Ahrefs API key.
 - Dockerfile (`FROM scratch`) for `getdr serve`.
 
-[Unreleased]: https://github.com/index-pages/getdr/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/index-pages/getdr/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/index-pages/getdr/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/index-pages/getdr/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/index-pages/getdr/releases/tag/v0.1.0

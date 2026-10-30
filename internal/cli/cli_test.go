@@ -232,7 +232,7 @@ func TestExitCodes(t *testing.T) {
 
 	h.env["GETDR_KEY"] = ""
 	code, _, errs = h.run("new1.com")
-	if code != 3 || !strings.Contains(errs, "https://index-pages.com/getdr#key") {
+	if code != 3 || !strings.Contains(errs, "https://index-pages.com/getdr/#key") {
 		t.Errorf("no key: %d %q", code, errs)
 	}
 	if code, _, _ = h.run("ok.com", "-q"); code != 0 {

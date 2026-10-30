@@ -1,7 +1,7 @@
 /* TEAM */
 Team: Index Pages
 Site: https://index-pages.com
-Project: https://index-pages.com/getdr
+Project: https://index-pages.com/getdr/
 
 /* THANKS */
 Domain Rating data: Ahrefs – https://ahrefs.com/

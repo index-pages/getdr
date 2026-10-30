@@ -1,5 +1,5 @@
 // Command getdr checks Ahrefs Domain Rating for domains.
-// See https://index-pages.com/getdr
+// See https://index-pages.com/getdr/
 package main
 
 import (

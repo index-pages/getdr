@@ -3,11 +3,11 @@ package buildinfo
 
 // Version is the getdr version. Release builds override it with
 // -ldflags "-X github.com/index-pages/getdr/internal/buildinfo.Version=X.Y.Z".
-var Version = "0.2.0"
+var Version = "0.2.1"
 
 const (
 	// Homepage is where every link printed by the binary points.
-	Homepage = "https://index-pages.com/getdr"
+	Homepage = "https://index-pages.com/getdr/"
 	// KeyHelp explains how to get a free Ahrefs API key.
 	KeyHelp = Homepage + "#key"
 	// Docs is the HTTP API documentation of getdr serve.

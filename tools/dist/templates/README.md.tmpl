@@ -1,0 +1,58 @@
+# getdr
+
+`getdr` is a small open-source command-line tool by [Index Pages](https://index-pages.com) that checks
+Ahrefs Domain Rating (DR) for one domain, a list, a file or stdin. It uses only the official free Ahrefs
+endpoint, keeps a local history of every check in SQLite, and can run as a tiny HTTP API (`getdr serve`)
+so every machine and agent on your network shares one cache and one key.
+
+Docs: [index-pages.com/getdr/]({{.Homepage}}) · Source: [github.com/index-pages/getdr]({{.Repo}})
+
+## Install
+{{if eq .Channel "npm"}}
+```sh
+npm install -g getdr
+npx getdr saas.com
+```
+
+This package has no install scripts. npm picks the prebuilt binary for your platform from an optional
+dependency (`getdr-linux-x64`, `getdr-darwin-arm64`, `getdr-win32-x64` and so on), and `getdr` runs it.
+Linux, macOS and Windows on x64 and arm64 are covered.
+{{- else}}
+```sh
+pipx install getdr
+uv tool install getdr
+pip install getdr
+```
+
+The wheels hold the prebuilt static binary for your platform and no Python code; nothing runs at install
+time. Linux (glibc and musl), macOS 11+ and Windows on x86_64 and arm64 are covered.
+{{- end}}
+
+Homebrew: `brew install index-pages/tap/getdr`. Docker: `ghcr.io/index-pages/getdr`.
+
+## Get a free Ahrefs API key
+
+Requests to the Domain Rating endpoint are free, but need an API key: sign up for a free
+[Ahrefs](https://ahrefs.com/) account, open Account settings → API keys, create a key and export it:
+
+```sh
+export AHREFS_KEY=your-key
+getdr key check
+```
+
+## Quick start
+
+```sh
+getdr saas.com                          # card on a terminal
+getdr a.com b.com c.com                 # several targets, sorted by DR
+getdr -f domains.txt --format json      # NDJSON, one object per line
+cat domains.txt | getdr > dr.tsv        # pipe: tab-separated domain and DR
+getdr saas.com --version dr4            # the new DR formula
+```
+
+All flags, output formats, the config file and the HTTP API: [index-pages.com/getdr/]({{.Homepage}}).
+
+Domain Rating data comes from [Ahrefs](https://ahrefs.com/) and is subject to the
+[Domain Rating License](https://ahrefs.com/legal/domain-rating-license). getdr is not affiliated with Ahrefs.
+
+MIT license. Made by [Index Pages](https://index-pages.com).

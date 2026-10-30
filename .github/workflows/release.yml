@@ -5,11 +5,13 @@ on:
     tags: ["v*"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       # Actions are pinned to commit SHAs (tag in the comment).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,3 +28,140 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # The channels below start from the published release, so a failed one can
+  # be rerun on its own. tools/dist checks every archive against checksums.txt.
+
+  # ghcr.io/index-pages/getdr for linux/amd64 and linux/arm64, built from the
+  # Dockerfile (the builder cross-compiles, no emulation).
+  docker:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and push the image
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          image=ghcr.io/index-pages/getdr
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker buildx create --use
+          docker buildx build --push \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg "VERSION=$v" \
+            --tag "$image:$v" --tag "$image:${v%.*}" --tag "$image:latest" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/index-pages/getdr" \
+            --annotation "index:org.opencontainers.image.description=getdr serve – Ahrefs Domain Rating HTTP API by Index Pages" \
+            --annotation "index:org.opencontainers.image.licenses=MIT" \
+            .
+
+  # Formula/getdr.rb in index-pages/homebrew-tap, pushed with a deploy key
+  # that can write to that repo only.
+  homebrew:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - run: gh release download "$GITHUB_REF_NAME" -p checksums.txt -D dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: go run ./tools/dist homebrew -version "${GITHUB_REF_NAME#v}" -dist dist -out dist/pkg
+      - name: Push the formula to index-pages/homebrew-tap
+        env:
+          TAP_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+        run: |
+          printf '%s\n' "$TAP_KEY" > "$RUNNER_TEMP/tap_key"
+          chmod 600 "$RUNNER_TEMP/tap_key"
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$RUNNER_TEMP/known_hosts"
+          export GIT_SSH_COMMAND="ssh -F /dev/null -i $RUNNER_TEMP/tap_key -o IdentitiesOnly=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts -o StrictHostKeyChecking=yes"
+          git clone --depth 1 git@github.com:index-pages/homebrew-tap.git "$RUNNER_TEMP/tap"
+          mkdir -p "$RUNNER_TEMP/tap/Formula"
+          cp dist/pkg/Formula/getdr.rb "$RUNNER_TEMP/tap/Formula/getdr.rb"
+          cd "$RUNNER_TEMP/tap"
+          git add Formula/getdr.rb
+          if git diff --cached --quiet; then
+            echo "the formula is already up to date"
+            exit 0
+          fi
+          git -c user.name="Index Pages" -c user.email=mail@index-pages.com commit -m "getdr ${GITHUB_REF_NAME#v}"
+          git push origin HEAD:main
+
+  # PyPI trusted publishing: the OIDC token of this workflow replaces any
+  # secret.
+  pypi:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - run: gh release download "$GITHUB_REF_NAME" -p checksums.txt -p '*.tar.gz' -p '*.zip' -D dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: go run ./tools/dist pypi -version "${GITHUB_REF_NAME#v}" -dist dist -out dist/pkg
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/pkg
+          skip-existing: true
+
+  # npm trusted publishing, like PyPI. npm can only trust a package that
+  # already exists, so a new package's first version is published by hand;
+  # until then this job fails and can be rerun afterwards.
+  npm:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      # Node 24 ships npm 11, which trusted publishing needs (>= 11.5.1).
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+      - run: gh release download "$GITHUB_REF_NAME" -p checksums.txt -p '*.tar.gz' -p '*.zip' -D dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: go run ./tools/dist npm -version "${GITHUB_REF_NAME#v}" -dist dist -out dist/pkg
+      # The platform packages go first, so getdr never points at a version
+      # that is not there yet. A version already on npm is skipped.
+      - run: |
+          v=${GITHUB_REF_NAME#v}
+          cd dist/pkg
+          for name in getdr-*-* getdr; do
+            if ! npm view "$name" name >/dev/null 2>&1; then
+              echo "::error::$name is not on npm yet: publish its first version by hand, then rerun this job"
+              exit 1
+            fi
+          done
+          for name in getdr-*-* getdr; do
+            if npm view "$name@$v" version >/dev/null 2>&1; then
+              echo "$name@$v is already on npm, skipping"
+            else
+              npm publish --provenance --access public --ignore-scripts "./$name"
+            fi
+          done

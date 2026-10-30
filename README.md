@@ -4,7 +4,7 @@
 Ahrefs Domain Rating (DR) for one domain, a list, a file or stdin. It uses only the official free Ahrefs
 endpoint, keeps a local history of every check in SQLite, and can run as a tiny HTTP API (`getdr serve`)
 so every machine and agent on your network shares one cache and one key. Docs:
-[index-pages.com/getdr](https://index-pages.com/getdr).
+[index-pages.com/getdr/](https://index-pages.com/getdr/).
 
 ```
   █  █ ▄▀▀▄     domain     saas.com
@@ -19,17 +19,19 @@ so every machine and agent on your network shares one cache and one key. Docs:
 ## Install
 
 ```sh
+brew install index-pages/tap/getdr                         # macOS, Linux
+npm install -g getdr                                       # or run once: npx getdr saas.com
+pipx install getdr                                         # or: uv tool install getdr, pip install getdr
 go install -trimpath github.com/index-pages/getdr@latest
 ```
 
 Or download a binary for Linux, macOS or Windows (amd64, arm64) from the
-[Releases](https://github.com/index-pages/getdr/releases) page and put it on your `PATH`.
+[Releases](https://github.com/index-pages/getdr/releases) page and put it on your `PATH`. For `getdr serve`
+there is a Docker image, `ghcr.io/index-pages/getdr`.
 
-<!-- TODO: brew install index-pages/tap/getdr -->
-<!-- TODO: npm install -g getdr -->
-<!-- TODO: pip install getdr -->
-
-Homebrew, npm and PyPI packages are planned. More in [docs/install.md](docs/install.md).
+Every package carries the same prebuilt binary as the release and runs nothing at install time: Homebrew
+and the PyPI wheels just unpack it, and npm picks it from a platform package (`getdr-linux-x64`,
+`getdr-darwin-arm64`, …) by `os` and `cpu`, with no install scripts. More in [docs/install.md](docs/install.md).
 
 ## Get a free Ahrefs API key
 
@@ -180,11 +182,11 @@ The server batches requests to Ahrefs, shares its cache with concurrent clients,
 when several clients ask for the same domain at once. Clients control only `fresh`, never the TTL. Without an
 Ahrefs key `/dr` answers 503. Full reference: [docs/api.md](docs/api.md).
 
-Docker (a `FROM scratch` image with the binary and a CA bundle):
+Docker (`ghcr.io/index-pages/getdr`, a `FROM scratch` image with the binary and a CA bundle, for
+linux/amd64 and linux/arm64):
 
 ```sh
-docker build -t getdr .
-docker run -d -p 8080:8080 -e GETDR_KEY=your-key -e GETDR_SERVE_TOKEN=s3cret -v getdr-data:/data getdr
+docker run -d -p 8080:8080 -e GETDR_KEY=your-key -e GETDR_SERVE_TOKEN=s3cret -v getdr-data:/data ghcr.io/index-pages/getdr
 ```
 
 ## Attribution
@@ -200,7 +202,7 @@ getdr is not affiliated with Ahrefs.
 
 getdr connects to exactly two places: `api.ahrefs.com`, and the getdr server you set in `api`. No telemetry,
 no update checks, no analytics, no pings. Every request carries the User-Agent
-`getdr/<version> (+https://index-pages.com/getdr)`. You can verify this in the source: all outgoing requests
+`getdr/<version> (+https://index-pages.com/getdr/)`. You can verify this in the source: all outgoing requests
 are made in `internal/ahrefs` and `internal/remote`, and redirects to any other host are refused.
 The binary honours the standard `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` environment variables; if you use
 a proxy and a getdr server on your LAN, add the server to `NO_PROXY`.

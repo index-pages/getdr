@@ -91,7 +91,7 @@ func TestEndpoints(t *testing.T) {
 	code, _, body = do(t, "GET", ts.URL+"/", "", "")
 	var info map[string]string
 	json.Unmarshal([]byte(body), &info)
-	if code != 200 || info["name"] != "getdr" || info["version"] != buildinfo.Version || info["homepage"] != "https://index-pages.com/getdr" || info["docs"] == "" {
+	if code != 200 || info["name"] != "getdr" || info["version"] != buildinfo.Version || info["homepage"] != "https://index-pages.com/getdr/" || info["docs"] == "" {
 		t.Fatalf("root %d %s", code, body)
 	}
 	code, _, _ = do(t, "GET", ts.URL+"/nope", "", "")
@@ -205,7 +205,7 @@ func TestNoKey(t *testing.T) {
 	ts, s := newServer(t, f, "")
 	s.HasKey = false
 	code, _, body := do(t, "GET", ts.URL+"/dr?target=a.com", "", "")
-	if code != 503 || !strings.Contains(body, "no Ahrefs API key") || !strings.Contains(body, "https://index-pages.com/getdr#key") {
+	if code != 503 || !strings.Contains(body, "no Ahrefs API key") || !strings.Contains(body, "https://index-pages.com/getdr/#key") {
 		t.Fatalf("%d %s", code, body)
 	}
 	if f.calls.Load() != 0 {

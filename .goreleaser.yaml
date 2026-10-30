@@ -40,4 +40,4 @@ changelog:
 release:
   name_template: "getdr {{ .Version }}"
   footer: |
-    Changes: see CHANGELOG.md. Docs: https://index-pages.com/getdr
+    Changes: see CHANGELOG.md. Docs: https://index-pages.com/getdr/

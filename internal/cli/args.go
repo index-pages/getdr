@@ -178,5 +178,5 @@ Flags:
 Exit codes: 0 ok, 1 a target failed --min/--max, 2 error or targets without
 a response, 3 Ahrefs API key missing or rejected.
 
-Docs: https://index-pages.com/getdr
+Docs: https://index-pages.com/getdr/
 `

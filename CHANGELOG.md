@@ -6,6 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-19
+
+### Fixed
+
+- PyPI: the wheels are written without ZIP data descriptors, which PyPI
+  rejects; 0.2.1 and 0.2.2 never reached PyPI.
+
 ## [0.2.2] - 2026-11-19
 
 ### Changed
@@ -85,7 +92,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `key check` to verify an Ahrefs API key.
 - Dockerfile (`FROM scratch`) for `getdr serve`.
 
-[Unreleased]: https://github.com/index-pages/getdr/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/index-pages/getdr/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/index-pages/getdr/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/index-pages/getdr/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/index-pages/getdr/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/index-pages/getdr/compare/v0.1.0...v0.2.0

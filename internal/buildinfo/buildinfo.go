@@ -3,7 +3,7 @@ package buildinfo
 
 // Version is the getdr version. Release builds override it with
 // -ldflags "-X github.com/index-pages/getdr/internal/buildinfo.Version=X.Y.Z".
-var Version = "0.2.2"
+var Version = "0.2.3"
 
 const (
 	// Homepage is where every link printed by the binary points.

@@ -2,7 +2,7 @@
 // checksums.txt – into the Homebrew formula, the npm packages and the PyPI
 // wheels. The release workflow runs it after GoReleaser:
 //
-//	go run ./tools/dist homebrew|npm|pypi -version 0.2.2 -dist dist -out pkg
+//	go run ./tools/dist homebrew|npm|pypi -version 0.2.3 -dist dist -out pkg
 //
 // homebrew needs only checksums.txt; npm and pypi take the binaries out of
 // the archives after checking them against checksums.txt.
@@ -88,7 +88,7 @@ func run(args []string) error {
 	}
 	cmd := args[0]
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
-	version := fs.String("version", "", "release version, e.g. 0.2.2")
+	version := fs.String("version", "", "release version, e.g. 0.2.3")
 	dist := fs.String("dist", "dist", "directory with the archives and checksums.txt")
 	out := fs.String("out", "pkg", "output directory")
 	license := fs.String("license", "LICENSE", "license file to ship in the npm packages and wheels")

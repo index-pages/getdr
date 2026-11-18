@@ -101,7 +101,7 @@ domains.
 ## GET /
 
 ```json
-{"name":"getdr","version":"0.2.2","homepage":"https://index-pages.com/getdr/","docs":"https://index-pages.com/getdr/#api"}
+{"name":"getdr","version":"0.2.3","homepage":"https://index-pages.com/getdr/","docs":"https://index-pages.com/getdr/#api"}
 ```
 
 ## Concurrency

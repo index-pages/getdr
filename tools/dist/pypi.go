@@ -3,9 +3,11 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"compress/flate"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"hash/crc32"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,14 +90,35 @@ func writeWheel(path string, files []wheelFile, record string) error {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 	var rec strings.Builder
+	// PyPI rejects archives whose entries carry a data descriptor, which is
+	// what zip.Writer.CreateHeader emits; compress first and write the entry
+	// raw with its sizes and CRC in the local header.
 	add := func(f wheelFile) error {
-		h := &zip.FileHeader{Name: f.name, Method: zip.Deflate, Modified: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
-		h.SetMode(f.mode)
-		w, err := zw.CreateHeader(h)
+		var deflated bytes.Buffer
+		fw, err := flate.NewWriter(&deflated, flate.BestCompression)
 		if err != nil {
 			return err
 		}
-		_, err = w.Write(f.data)
+		if _, err := fw.Write(f.data); err != nil {
+			return err
+		}
+		if err := fw.Close(); err != nil {
+			return err
+		}
+		h := &zip.FileHeader{
+			Name:               f.name,
+			Method:             zip.Deflate,
+			Modified:           time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+			CRC32:              crc32.ChecksumIEEE(f.data),
+			CompressedSize64:   uint64(deflated.Len()),
+			UncompressedSize64: uint64(len(f.data)),
+		}
+		h.SetMode(f.mode)
+		w, err := zw.CreateRaw(h)
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(deflated.Bytes())
 		return err
 	}
 	for _, f := range files {

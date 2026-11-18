@@ -11,7 +11,7 @@ Docs: [index-pages.com/getdr/]({{.Homepage}}) · Source: [github.com/index-pages
 {{if eq .Channel "npm"}}
 ```sh
 npm install -g getdr
-npx getdr saas.com
+npx getdr index-pages.com
 ```
 
 This package has no install scripts. npm picks the prebuilt binary for your platform from an optional
@@ -43,11 +43,11 @@ getdr key check
 ## Quick start
 
 ```sh
-getdr saas.com                          # card on a terminal
+getdr index-pages.com                   # card on a terminal
 getdr a.com b.com c.com                 # several targets, sorted by DR
 getdr -f domains.txt --format json      # NDJSON, one object per line
 cat domains.txt | getdr > dr.tsv        # pipe: tab-separated domain and DR
-getdr saas.com --version dr4            # the new DR formula
+getdr index-pages.com --version dr3     # the previous DR formula
 ```
 
 All flags, output formats, the config file and the HTTP API: [index-pages.com/getdr/]({{.Homepage}}).

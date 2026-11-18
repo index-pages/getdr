@@ -18,7 +18,7 @@ func TestDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Version != "dr3" || c.TTL != 7*24*time.Hour || c.TTLNone != 24*time.Hour || c.MaxAge != 30*24*time.Hour {
+	if c.Version != "dr4" || c.TTL != 7*24*time.Hour || c.TTLNone != 24*time.Hour || c.MaxAge != 30*24*time.Hour {
 		t.Fatalf("unexpected defaults: %+v", c)
 	}
 	if c.Batch != 1000 || c.RPM != 40 || c.Retries != 3 || c.Timeout != 30*time.Second || c.MaxTargets != 10000 {
@@ -42,7 +42,7 @@ func TestPriority(t *testing.T) {
 	file := filepath.Join(dir, "config.toml")
 	err := os.WriteFile(file, []byte(`
 key = "file-key-123456789"
-version = "dr4"
+version = "dr3"
 [cache]
 path = "~/cache.db"
 ttl = "2d"
@@ -69,7 +69,7 @@ max_targets = 5
 	}
 	checks := []struct{ name, val, src string }{
 		{"key", "****ey-1", "env AHREFS_KEY"},
-		{"version", "dr4", "file"},
+		{"version", "dr3", "file"},
 		{"cache.path", filepath.Join(dir, "cache.db"), "file"},
 		{"cache.ttl", "3d", "flag"},
 		{"ahrefs.rpm", "20", "env GETDR_AHREFS_RPM"},

@@ -6,6 +6,20 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-19
+
+### Changed
+
+- The default DR version is `dr4`, the new Ahrefs formula; before it was
+  `dr3`. This applies to the CLI, the config (`version`), `getdr serve`
+  for clients that send no version, and `key check`. To stay on the old
+  formula, set `version = "dr3"` in the config or `GETDR_VERSION=dr3`, or
+  pass `--version dr3`.
+- `dr3` and `dr4` values are cached apart, so after the upgrade the first
+  check of a domain is fetched again and its trend starts anew; the `dr3`
+  history stays in the cache.
+- Docs and examples use `dr4`.
+
 ## [0.2.3] - 2026-11-19
 
 ### Fixed
@@ -92,7 +106,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `key check` to verify an Ahrefs API key.
 - Dockerfile (`FROM scratch`) for `getdr serve`.
 
-[Unreleased]: https://github.com/index-pages/getdr/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/index-pages/getdr/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/index-pages/getdr/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/index-pages/getdr/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/index-pages/getdr/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/index-pages/getdr/compare/v0.2.0...v0.2.1

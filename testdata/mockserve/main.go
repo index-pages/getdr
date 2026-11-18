@@ -123,7 +123,7 @@ func main() {
 	ahrefsAddr := flag.String("ahrefs", "", "also expose the fake Ahrefs endpoint on this address")
 	cachePath := flag.String("cache", "", "cache file (default: a fresh temporary file)")
 	ttl := flag.Duration("ttl", 7*24*time.Hour, "cache TTL")
-	version := flag.String("version", "dr3", "DR version for requests that name none")
+	version := flag.String("version", "dr4", "DR version for requests that name none")
 	flag.Parse()
 
 	mux := http.NewServeMux()

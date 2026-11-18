@@ -69,7 +69,7 @@ func Defaults(home, xdgCache string) map[string]string {
 	return map[string]string{
 		"key":               "",
 		"api":               "",
-		"version":           "dr3",
+		"version":           "dr4",
 		"cache.path":        cachePath,
 		"cache.ttl":         "7d",
 		"cache.ttl_none":    "1d",

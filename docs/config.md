@@ -24,7 +24,7 @@ unnoticed. `~/` at the start of a path is expanded.
 ```toml
 key = ""
 api = ""
-version = "dr3"
+version = "dr4"
 
 [cache]
 path = "~/.cache/getdr/cache.db"
@@ -50,7 +50,7 @@ max_targets = 10000
 |---|---|---|---|---|
 | `key` | `GETDR_KEY`, `AHREFS_KEY` | `--key` | – | Ahrefs API key |
 | `api` | `GETDR_API` | `--api` | – | URL of a getdr server; when set, the CLI asks it instead of Ahrefs |
-| `version` | `GETDR_VERSION` | `--version` | `dr3` | DR version, `dr3` or `dr4` |
+| `version` | `GETDR_VERSION` | `--version` | `dr4` | DR version, `dr4` or `dr3` |
 | `cache.path` | `GETDR_CACHE_PATH` | – | `$XDG_CACHE_HOME/getdr/cache.db` or `~/.cache/getdr/cache.db` | SQLite cache file |
 | `cache.ttl` | `GETDR_CACHE_TTL` | `--ttl` | `7d` | how long a value stays fresh |
 | `cache.ttl_none` | `GETDR_CACHE_TTL_NONE` | – | `1d` | how long "no data" stays fresh |
@@ -74,7 +74,7 @@ getdr config show
 ```
 key                 ****1a2b                    env AHREFS_KEY
 api                 ""                          default
-version             dr3                         default
+version             dr4                         default
 cache.path          /home/me/.cache/getdr/cache.db   default
 cache.ttl           7d                          default
 ...

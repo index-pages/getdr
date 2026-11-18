@@ -15,7 +15,7 @@ Any of these works; the first one found wins:
 
 | where | example |
 |---|---|
-| flag | `getdr --key KEY saas.com` |
+| flag | `getdr --key KEY index-pages.com` |
 | `GETDR_KEY` | `export GETDR_KEY=KEY` |
 | `AHREFS_KEY` | `export AHREFS_KEY=KEY` |
 | config file | `key = "KEY"` in `~/.config/getdr/config.toml` |

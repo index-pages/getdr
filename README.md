@@ -7,11 +7,11 @@ so every machine and agent on your network shares one cache and one key. Docs:
 [index-pages.com/getdr/](https://index-pages.com/getdr/).
 
 ```
-  █  █ ▄▀▀▄     domain     saas.com
-  █  █ █  █     rating     49 ▐█████████▌░░░░░░░░░░  /100
-  ▀▀▀█  ▀▀█     trend      ▁▅█  +4 since Sep 17
-     █    █     checked    2026-10-28 · 12 min ago, cached
-     █  ▄▄▀     version    dr3
+  ▄▀▀  ▄▀▀▄     domain     index-pages.com
+  █    █  █     rating     69 ▐█████████████▌░░░░░░  /100
+  █▀▀▄  ▀▀█     trend      ▁▅█  +4 since Oct 9
+  █  █    █     checked    2026-11-19 · 12 min ago, cached
+  ▀▄▄▀  ▄▄▀     version    dr4
 
   Domain Rating by Ahrefs · getdr by Index Pages
 ```
@@ -20,7 +20,7 @@ so every machine and agent on your network shares one cache and one key. Docs:
 
 ```sh
 brew install index-pages/tap/getdr                         # macOS, Linux
-npm install -g getdr                                       # or run once: npx getdr saas.com
+npm install -g getdr                                       # or run once: npx getdr index-pages.com
 pipx install getdr                                         # or: uv tool install getdr, pip install getdr
 go install -trimpath github.com/index-pages/getdr@latest
 ```
@@ -48,7 +48,7 @@ Details: [docs/key.md](docs/key.md).
 ## Quick start
 
 ```sh
-getdr saas.com                          # card on a terminal
+getdr index-pages.com                   # card on a terminal
 getdr https://www.example.com/page      # URLs are reduced to the host
 getdr a.com b.com c.com                 # several targets, sorted by DR
 getdr -f domains.txt                    # one per line, # comments allowed
@@ -56,8 +56,8 @@ cat domains.txt | getdr > dr.tsv        # pipe: tab-separated domain and DR
 getdr -f domains.txt --format json      # NDJSON, one object per line
 getdr -b a.com b.com                    # only the values
 getdr -f domains.txt --min 30 -q        # keep DR >= 30, exit 1 if any failed
-getdr saas.com --version dr4            # the new DR formula
-getdr saas.com --fresh                  # ignore the cache
+getdr index-pages.com --version dr3     # the previous DR formula
+getdr index-pages.com --fresh           # ignore the cache
 ```
 
 Targets are normalized by default: a URL becomes its host, `www.` is dropped, everything is
@@ -79,7 +79,7 @@ On a terminal the default is `card`; when stdout is a pipe or a file it is `tsv`
 | `card` | big number, bar, trend and summary for people; colors follow DR (0–19 gray, 20–39 yellow, 40–69 green, 70+ blue) |
 | `tsv` | `domain<TAB>dr`, no header; empty DR when there is no data |
 | `csv` | same columns with a header row |
-| `json` | NDJSON: `{"target":"x.com","dr":49,"version":"dr3","checked_at":"2026-10-28T12:00:00Z","cached":true}` |
+| `json` | NDJSON: `{"target":"index-pages.com","dr":69,"version":"dr4","checked_at":"2026-11-19T12:00:00Z","cached":true}` |
 | `-b` | DR values only, one per line, empty line for no data |
 
 `--fields` picks the columns, in the order given, from `domain,dr,version,checked_at,delta,cached`. The
@@ -104,7 +104,7 @@ or a non-UTF-8 locale. Lists over 200 rows show the top 200; `--all` shows every
     --all              card: show all rows
     --min N, --max N   filter by DR; exit 1 if any target fails
     --raw              no target normalization
-    --version V        dr3 (default) or dr4
+    --version V        dr4 (default) or dr3
     --fresh            refetch and update the cache
     --no-cache         neither read nor write the cache
     --ttl DUR          cache TTL for this run (7d, 12h, 30m)
@@ -132,7 +132,7 @@ Priority: flag → `GETDR_*` environment variable → config file → default. T
 ```toml
 key = ""                 # empty = from the environment
 api = ""                 # URL of your getdr serve; when set, the CLI asks it instead of Ahrefs
-version = "dr3"
+version = "dr4"
 
 [cache]
 path = "~/.cache/getdr/cache.db"
@@ -166,14 +166,14 @@ is fetched again. `dr3` and `dr4` are never mixed. Targets that got no response 
 
 ```sh
 GETDR_KEY=your-key getdr serve --listen 0.0.0.0:8080 --token s3cret
-curl -H 'Authorization: Bearer s3cret' 'http://lan-host:8080/dr?target=saas.com'
+curl -H 'Authorization: Bearer s3cret' 'http://lan-host:8080/dr?target=index-pages.com'
 getdr --api http://lan-host:8080 --token s3cret -f domains.txt
 ```
 
 | endpoint | |
 |---|---|
-| `GET /dr?target=x.com[&version=dr3][&fresh=1][&raw=1]` | one result object |
-| `POST /dr` `{"targets":[…],"version":"dr3","fresh":false,"raw":false}` | `{"results":[…]}` |
+| `GET /dr?target=x.com[&version=dr4][&fresh=1][&raw=1]` | one result object |
+| `POST /dr` `{"targets":[…],"version":"dr4","fresh":false,"raw":false}` | `{"results":[…]}` |
 | `GET /healthz` | `ok` |
 | `GET /stats` | cache size, hit rate, Ahrefs requests in the last hour |
 | `GET /` | name, version, links |

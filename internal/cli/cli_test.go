@@ -65,7 +65,7 @@ func (f *fakeAhrefs) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		v := float64(len(strings.Split(t, ".")[0]) * 10)
-		if body.Version == "dr4" {
+		if body.Version == "dr3" {
 			v += 1.5
 		}
 		items = append(items, fmt.Sprintf(`{"target":%q,"domain_rating":%v}`, t, v))
@@ -146,21 +146,21 @@ func TestTSVDefaultAndCache(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &rec); err != nil {
 		t.Fatal(err)
 	}
-	if rec["target"] != "abc.com" || rec["dr"] != 30.0 || rec["cached"] != true || rec["version"] != "dr3" || rec["checked_at"] == nil || len(rec) != 5 {
+	if rec["target"] != "abc.com" || rec["dr"] != 30.0 || rec["cached"] != true || rec["version"] != "dr4" || rec["checked_at"] == nil || len(rec) != 5 {
 		t.Fatalf("json %s", out)
 	}
 	if lines[1] != `{"target":"nodata.net","dr":null,"delta":null}` {
 		t.Fatalf("no data: %s", lines[1])
 	}
-	// --fresh refetches; dr4 never reuses dr3.
+	// --fresh refetches; dr3 never reuses dr4.
 	h.run("abc.com", "--fresh")
-	h.run("abc.com", "--version", "dr4")
+	h.run("abc.com", "--version", "dr3")
 	if h.fake.targets != 5 {
 		t.Fatalf("Ahrefs saw %d targets, want 5", h.fake.targets)
 	}
-	_, out, _ = h.run("abc.com", "--version=dr4", "-b", "-q")
+	_, out, _ = h.run("abc.com", "--version=dr3", "-b", "-q")
 	if out != "31.5\n" {
-		t.Fatalf("dr4 bare %q", out)
+		t.Fatalf("dr3 bare %q", out)
 	}
 }
 
@@ -220,7 +220,7 @@ func TestExitCodes(t *testing.T) {
 		t.Errorf("no response: %d %q %q", code, out, errs)
 	}
 	code, out, _ = h.run("down.com", "--format", "json", "-q")
-	if code != 2 || out != `{"target":"down.com","dr":null,"version":"dr3","checked_at":null,"cached":false}`+"\n" {
+	if code != 2 || out != `{"target":"down.com","dr":null,"version":"dr4","checked_at":null,"cached":false}`+"\n" {
 		t.Errorf("no response json: %d %q", code, out)
 	}
 	// No response is not cached.
@@ -342,7 +342,7 @@ func TestAPIMode(t *testing.T) {
 		return out
 	})
 	s := &server.Server{Engine: &lookup.Engine{Cache: db, Fetcher: fetcher, TTL: time.Hour, TTLNone: time.Hour},
-		DefaultVersion: "dr3", HasKey: true, Token: "tok", MaxTargets: 100}
+		DefaultVersion: "dr4", HasKey: true, Token: "tok", MaxTargets: 100}
 	srv := httptest.NewServer(s.Handler())
 	defer srv.Close()
 	h.env["GETDR_KEY"] = ""
@@ -354,7 +354,7 @@ func TestAPIMode(t *testing.T) {
 	}
 	h.env["GETDR_SERVE_TOKEN"] = "tok"
 	code, out, _ := h.run("a.com", "nodata.com", "--format", "json", "-q")
-	if code != 0 || !strings.Contains(out, `{"target":"a.com","dr":77,"version":"dr3"`) || !strings.Contains(out, `"target":"nodata.com","dr":null`) {
+	if code != 0 || !strings.Contains(out, `{"target":"a.com","dr":77,"version":"dr4"`) || !strings.Contains(out, `"target":"nodata.com","dr":null`) {
 		t.Fatalf("api json: %d %q", code, out)
 	}
 	if h.fake.requests != 0 {
@@ -363,7 +363,7 @@ func TestAPIMode(t *testing.T) {
 	// A target the server's Ahrefs refuses is reported as invalid, not as
 	// no response.
 	code, out, errs = h.run("refused.com", "--format", "json")
-	if code != 2 || out != `{"target":"refused.com","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"}`+"\n" ||
+	if code != 2 || out != `{"target":"refused.com","dr":null,"version":"dr4","checked_at":null,"cached":false,"error":"invalid target"}`+"\n" ||
 		errs != "getdr: invalid target: refused.com\n" {
 		t.Fatalf("api invalid: %d %q %q", code, out, errs)
 	}
@@ -398,7 +398,7 @@ func TestConfigShow(t *testing.T) {
 	if code != 0 {
 		t.Fatal(code)
 	}
-	for _, want := range []string{"****1234", "env GETDR_KEY", "ahrefs.batch", "500", "file", "cache.ttl", "2d", "flag", "version", "dr3", "default", "config file: " + filepath.Join(cfgDir, "config.toml")} {
+	for _, want := range []string{"****1234", "env GETDR_KEY", "ahrefs.batch", "500", "file", "cache.ttl", "2d", "flag", "version", "dr4", "default", "config file: " + filepath.Join(cfgDir, "config.toml")} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
 		}
@@ -417,10 +417,10 @@ func TestCacheCommands(t *testing.T) {
 	db, _ := cache.Open(h.env["GETDR_CACHE_PATH"])
 	old := time.Now().Add(-90 * 24 * time.Hour)
 	v := 1.0
-	db.Insert("dr3", []cache.Row{{Domain: "aa.com", DR: &v, CheckedAt: old}, {Domain: "zz.com", DR: &v, CheckedAt: old}})
+	db.Insert("dr4", []cache.Row{{Domain: "aa.com", DR: &v, CheckedAt: old}, {Domain: "zz.com", DR: &v, CheckedAt: old}})
 	db.Close()
 	code, out, _ := h.run("cache", "stats")
-	if code != 0 || !strings.Contains(out, "checks") || !strings.Contains(out, "4") || !strings.Contains(out, "dr3 3") {
+	if code != 0 || !strings.Contains(out, "checks") || !strings.Contains(out, "4") || !strings.Contains(out, "dr4 3") {
 		t.Fatalf("stats: %d %q", code, out)
 	}
 	code, out, _ = h.run("cache", "purge")
@@ -486,9 +486,9 @@ func TestInvalidTargets(t *testing.T) {
 	}
 	before := h.fake.requests
 	code, out, _ = h.run("localhost", "a..com", "ahrefs.com", "--format", "json", "-q")
-	want := `{"target":"localhost","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"}` + "\n" +
-		`{"target":"a..com","dr":null,"version":"dr3","checked_at":null,"cached":false,"error":"invalid target"}` + "\n" +
-		`{"target":"ahrefs.com","dr":60,"version":"dr3"`
+	want := `{"target":"localhost","dr":null,"version":"dr4","checked_at":null,"cached":false,"error":"invalid target"}` + "\n" +
+		`{"target":"a..com","dr":null,"version":"dr4","checked_at":null,"cached":false,"error":"invalid target"}` + "\n" +
+		`{"target":"ahrefs.com","dr":60,"version":"dr4"`
 	if code != 2 || !strings.HasPrefix(out, want) {
 		t.Fatalf("json %d %q", code, out)
 	}

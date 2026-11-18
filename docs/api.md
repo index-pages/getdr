@@ -20,7 +20,7 @@ When `token` is set, `/dr` and `/stats` need `Authorization: Bearer <token>`; ot
 The same object the CLI prints with `--format json`:
 
 ```json
-{"target":"saas.com","dr":49,"version":"dr3","checked_at":"2026-10-28T12:00:00Z","cached":true}
+{"target":"index-pages.com","dr":69,"version":"dr4","checked_at":"2026-11-19T12:00:00Z","cached":true}
 ```
 
 | field | |
@@ -44,7 +44,7 @@ rejected locally, and a target Ahrefs refuses with HTTP 400 (`{"error":"bad 'tar
 ## GET /dr
 
 ```
-GET /dr?target=saas.com[&version=dr3][&fresh=1][&raw=1]
+GET /dr?target=index-pages.com[&version=dr4][&fresh=1][&raw=1]
 ```
 
 `200` with one result object. `version` defaults to the server's `version` setting; `fresh=1` skips the
@@ -53,15 +53,15 @@ cache; `raw=1` disables normalization.
 ## POST /dr
 
 ```json
-{"targets":["saas.com","https://www.example.com/page"],"version":"dr3","fresh":false,"raw":false}
+{"targets":["index-pages.com","https://www.example.com/page"],"version":"dr4","fresh":false,"raw":false}
 ```
 
 `200`:
 
 ```json
 {"results":[
-  {"target":"saas.com","dr":49,"version":"dr3","checked_at":"2026-10-28T12:00:00Z","cached":true},
-  {"target":"example.com","dr":93,"version":"dr3","checked_at":"2026-10-28T12:03:11Z","cached":false}
+  {"target":"index-pages.com","dr":69,"version":"dr4","checked_at":"2026-11-19T12:00:00Z","cached":true},
+  {"target":"example.com","dr":93,"version":"dr4","checked_at":"2026-11-19T12:03:11Z","cached":false}
 ]}
 ```
 
@@ -89,7 +89,7 @@ accepted – clients cannot change the server's TTL.
 ```json
 {
   "cache": {"size_bytes":45328,"rows":1200,"domains":950,
-            "versions":{"dr3":900,"dr4":50},"oldest":"2026-10-01T09:00:00Z","newest":"2026-10-28T12:03:11Z"},
+            "versions":{"dr3":50,"dr4":900},"oldest":"2026-10-28T09:00:00Z","newest":"2026-11-19T12:03:11Z"},
   "lookups": {"hits":1830,"misses":120,"hit_rate":0.9385},
   "ahrefs_requests_last_hour": 3
 }
@@ -101,7 +101,7 @@ domains.
 ## GET /
 
 ```json
-{"name":"getdr","version":"0.2.3","homepage":"https://index-pages.com/getdr/","docs":"https://index-pages.com/getdr/#api"}
+{"name":"getdr","version":"0.3.0","homepage":"https://index-pages.com/getdr/","docs":"https://index-pages.com/getdr/#api"}
 ```
 
 ## Concurrency
@@ -117,6 +117,6 @@ getdr --api http://lan-host:8080 --token s3cret -f domains.txt
 
 or set `api` and `serve.token` in the config file, or `GETDR_API` and `GETDR_SERVE_TOKEN`. The CLI sends one
 `POST /dr` for the targets its own cache does not cover and forwards `--fresh`. It always sends its own DR
-version (`--version`, or `version` in its config, `dr3` by default), so the server's `version` setting
+version (`--version`, or `version` in its config, `dr4` by default), so the server's `version` setting
 applies only to clients that send none. Proxy variables
 (`HTTP_PROXY`, `HTTPS_PROXY`) apply to this request too; add a LAN server to `NO_PROXY`.

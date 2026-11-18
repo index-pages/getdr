@@ -46,7 +46,7 @@ func render(t *testing.T, shown, all []lookup.Result, o Options) string {
 func sample() []lookup.Result {
 	none := lookup.Result{Target: "down.example", Version: "dr3", Status: lookup.NoResponse}
 	return []lookup.Result{
-		res("saas.com", fp(49), 12*time.Minute, true, 45, 47),
+		res("index-pages.com", fp(49), 12*time.Minute, true, 45, 47),
 		res("typo.example", nil, time.Hour, true),
 		res("somedevblog.io", fp(61.3), 0, false, 52),
 		none,
@@ -56,7 +56,7 @@ func sample() []lookup.Result {
 func TestMachineFormats(t *testing.T) {
 	rs := sample()
 	got := render(t, rs, rs, opts("tsv"))
-	want := "saas.com\t49\ntypo.example\t\nsomedevblog.io\t61.3\ndown.example\t\n"
+	want := "index-pages.com\t49\ntypo.example\t\nsomedevblog.io\t61.3\ndown.example\t\n"
 	if got != want {
 		t.Errorf("tsv:\n%q\nwant\n%q", got, want)
 	}
@@ -64,7 +64,7 @@ func TestMachineFormats(t *testing.T) {
 	o.Fields = []string{"domain", "dr", "version", "checked_at", "delta", "cached"}
 	got = render(t, rs[:2], rs, o)
 	want = "domain,dr,version,checked_at,delta,cached\n" +
-		"saas.com,49,dr3,2026-10-28T11:48:00Z,2,true\n" +
+		"index-pages.com,49,dr3,2026-10-28T11:48:00Z,2,true\n" +
 		"typo.example,,dr3,2026-10-28T11:00:00Z,,true\n"
 	if got != want {
 		t.Errorf("csv:\n%s\nwant\n%s", got, want)
@@ -74,7 +74,7 @@ func TestMachineFormats(t *testing.T) {
 	got = render(t, rs, rs, o)
 	lines := strings.Split(strings.TrimSpace(got), "\n")
 	if len(lines) != 4 ||
-		lines[0] != `{"target":"saas.com","dr":49,"version":"dr3","checked_at":"2026-10-28T11:48:00Z","cached":true}` ||
+		lines[0] != `{"target":"index-pages.com","dr":49,"version":"dr3","checked_at":"2026-10-28T11:48:00Z","cached":true}` ||
 		lines[1] != `{"target":"typo.example","dr":null,"version":"dr3","checked_at":"2026-10-28T11:00:00Z","cached":true}` ||
 		lines[3] != `{"target":"down.example","dr":null,"version":"dr3","checked_at":null,"cached":false}` {
 		t.Errorf("json:\n%s", got)
@@ -82,7 +82,7 @@ func TestMachineFormats(t *testing.T) {
 	o = opts("json")
 	o.Fields = []string{"domain", "delta", "dr"}
 	got = render(t, rs[:2], rs, o)
-	if got != `{"target":"saas.com","delta":2,"dr":49}`+"\n"+`{"target":"typo.example","delta":null,"dr":null}`+"\n" {
+	if got != `{"target":"index-pages.com","delta":2,"dr":49}`+"\n"+`{"target":"typo.example","delta":null,"dr":null}`+"\n" {
 		t.Errorf("json --fields:\n%s", got)
 	}
 	inv := lookup.Result{Target: "a b", Version: "dr3", Status: lookup.Invalid}
@@ -105,11 +105,11 @@ func TestMachineFormats(t *testing.T) {
 }
 
 func TestCardSingle(t *testing.T) {
-	r := res("saas.com", fp(49), 12*time.Minute, true, 45, 47)
+	r := res("index-pages.com", fp(49), 12*time.Minute, true, 45, 47)
 	r.History[0].CheckedAt = time.Date(2026, 9, 17, 10, 0, 0, 0, time.UTC)
 	got := render(t, []lookup.Result{r}, []lookup.Result{r}, opts("card"))
 	for _, want := range []string{
-		"domain     saas.com", "rating     49 ▐█████████▌░░░░░░░░░░  /100",
+		"domain     index-pages.com", "rating     49 ▐█████████▌░░░░░░░░░░  /100",
 		"trend      ▁▅█  +4 since Sep 17", "checked    2026-10-28 · 12 min ago, cached",
 		"version    dr3", "Domain Rating by Ahrefs · getdr by Index Pages", "█",
 	} {

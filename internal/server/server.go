@@ -202,7 +202,7 @@ func (s *Server) dr(w http.ResponseWriter, r *http.Request) {
 				writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("request body larger than %d bytes", limit))
 				return
 			}
-			writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error()+`; expected {"targets":["example.com"],"version":"dr3","fresh":false,"raw":false}`)
+			writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error()+`; expected {"targets":["example.com"],"version":"dr4","fresh":false,"raw":false}`)
 			return
 		}
 		if dec.More() || dec.Decode(&struct{}{}) != io.EOF {

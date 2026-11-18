@@ -161,7 +161,7 @@ Flags:
       --all              card: show all rows, not only the top 200
       --min N, --max N   keep only DR >= N / <= N; exit 1 if any target fails
       --raw              send targets as given, without normalization
-      --version V        DR version: dr3 (default) or dr4
+      --version V        DR version: dr4 (default) or dr3
       --fresh            ignore the cache, refetch and update it
       --no-cache         neither read nor write the cache
       --ttl DUR          cache TTL for this run (7d, 12h, 30m)

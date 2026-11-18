@@ -120,6 +120,7 @@ jobs:
         with:
           packages-dir: dist/pkg
           skip-existing: true
+          verbose: true
 
   # npm trusted publishing, like PyPI. npm can only trust a package that
   # already exists, so a new package's first version is published by hand;
@@ -152,13 +153,13 @@ jobs:
       - run: |
           v=${GITHUB_REF_NAME#v}
           cd dist/pkg
-          for name in getdr-*-* getdr; do
+          for name in @index-pages/getdr-*-* getdr; do
             if ! npm view "$name" name >/dev/null 2>&1; then
               echo "::error::$name is not on npm yet: publish its first version by hand, then rerun this job"
               exit 1
             fi
           done
-          for name in getdr-*-* getdr; do
+          for name in @index-pages/getdr-*-* getdr; do
             if npm view "$name@$v" version >/dev/null 2>&1; then
               echo "$name@$v is already on npm, skipping"
             else

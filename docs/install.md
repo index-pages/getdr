@@ -19,8 +19,9 @@ npm install -g getdr
 npx getdr saas.com
 ```
 
-The `getdr` package lists one package per platform as optional dependencies: `getdr-linux-x64`,
-`getdr-linux-arm64`, `getdr-darwin-x64`, `getdr-darwin-arm64`, `getdr-win32-x64`, `getdr-win32-arm64`.
+The `getdr` package lists one package per platform as optional dependencies, all under the
+`@index-pages` scope: `@index-pages/getdr-linux-x64`, `getdr-linux-arm64`, `getdr-darwin-x64`,
+`getdr-darwin-arm64`, `getdr-win32-x64` and `getdr-win32-arm64`.
 npm installs only the one that matches your `os` and `cpu`, and the `getdr` command is a small Node script
 that runs its binary. There are no install scripts, so it works with `ignore-scripts=true`; it does not
 work with `--omit=optional`. Node 18 or newer.
@@ -53,7 +54,7 @@ Every release on [GitHub Releases](https://github.com/index-pages/getdr/releases
 Linux, macOS and Windows on amd64 and arm64, plus `checksums.txt`.
 
 ```sh
-tar -xzf getdr_0.2.1_linux_amd64.tar.gz
+tar -xzf getdr_0.2.2_linux_amd64.tar.gz
 sha256sum -c --ignore-missing checksums.txt
 sudo install getdr /usr/local/bin/
 getdr -V
@@ -76,7 +77,7 @@ docker run -d -p 8080:8080 -e GETDR_KEY=your-key -v getdr-data:/data ghcr.io/ind
 ```
 
 `ghcr.io/index-pages/getdr` is built for linux/amd64 and linux/arm64 and tagged with the version
-(`0.2.1`), the minor version (`0.2`) and `latest`. It is `FROM scratch` with only the binary and a CA
+(`0.2.2`), the minor version (`0.2`) and `latest`. It is `FROM scratch` with only the binary and a CA
 bundle, runs as an unprivileged user and keeps its cache in `/data`. To build it yourself from a clone:
 `docker build -t getdr .`.
 

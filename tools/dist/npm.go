@@ -8,7 +8,7 @@ import (
 )
 
 // npm writes the npm packages, each in its own directory ready for npm
-// publish: getdr-<os>-<cpu> holds the binary for one platform, and getdr
+// publish: @index-pages/getdr-<os>-<cpu> holds the binary for one platform, and getdr
 // lists them all as optional dependencies, so npm installs only the one that
 // matches os and cpu. getdr's bin is a small Node script that runs that
 // binary. Nothing runs at install time.

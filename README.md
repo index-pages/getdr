@@ -30,8 +30,8 @@ Or download a binary for Linux, macOS or Windows (amd64, arm64) from the
 there is a Docker image, `ghcr.io/index-pages/getdr`.
 
 Every package carries the same prebuilt binary as the release and runs nothing at install time: Homebrew
-and the PyPI wheels just unpack it, and npm picks it from a platform package (`getdr-linux-x64`,
-`getdr-darwin-arm64`, …) by `os` and `cpu`, with no install scripts. More in [docs/install.md](docs/install.md).
+and the PyPI wheels just unpack it, and npm picks it from a platform package
+(`@index-pages/getdr-linux-x64`, `@index-pages/getdr-darwin-arm64`, …) by `os` and `cpu`, with no install scripts. More in [docs/install.md](docs/install.md).
 
 ## Get a free Ahrefs API key
 
